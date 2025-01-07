@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"salimon/proxy/types"
+	"salimon/nexus/types"
 	"time"
 
 	"github.com/google/uuid"
@@ -84,6 +84,13 @@ func FindUserByUsername(username string) (*types.User, error) {
 	query := "SELECT * FROM users WHERE username=$1"
 
 	rows, err := DB.Query(query, username)
+	return parseSingleUserQuery(rows, err)
+}
+
+func FindUserById(id string) (*types.User, error) {
+	query := "SELECT * FROM users WHERE id=$1"
+
+	rows, err := DB.Query(query, id)
 	return parseSingleUserQuery(rows, err)
 }
 

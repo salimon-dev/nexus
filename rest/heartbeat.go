@@ -1,4 +1,4 @@
-package handlers
+package rest
 
 import (
 	"net/http"
@@ -10,7 +10,7 @@ import (
 
 func HeartBeatHandler(c echo.Context) error {
 	response := map[string]string{
-		"name":        "proxy service",
+		"name":        "nexus service",
 		"environment": os.Getenv("ENV"),
 		"time":        time.Now().Format(time.RFC3339),
 	}

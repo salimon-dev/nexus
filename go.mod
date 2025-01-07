@@ -1,4 +1,4 @@
-module salimon/proxy
+module salimon/nexus
 
 go 1.22.1
 

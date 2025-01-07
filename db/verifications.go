@@ -2,35 +2,11 @@ package db
 
 import (
 	"math/rand"
+	"salimon/nexus/types"
 	"time"
 
 	"github.com/google/uuid"
 )
-
-type VerificationType int8
-
-const (
-	VerificationTypeEmail VerificationType = 0
-	VerificationTypeSMS   VerificationType = 1
-)
-
-type VerificationDomain int8
-
-const (
-	VerificationDomainRegister       VerificationDomain = 0
-	VerificationDomainPasswordReset  VerificationDomain = 1
-	VerificationDomainEmailUpdate    VerificationDomain = 2
-	VerificationDomainUsernameUpdate VerificationDomain = 3
-)
-
-type Verification struct {
-	Id        string             `json:"id"`
-	UserId    string             `json:"user_id"`
-	Type      VerificationType   `json:"type"`
-	Domain    VerificationDomain `json:"domain"`
-	Token     string             `json:"token"`
-	ExpiresAt time.Time          `json:"expires_at"`
-}
 
 func generateRandomString(n int) string {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -42,7 +18,7 @@ func generateRandomString(n int) string {
 	return string(result)
 }
 
-func InserVerification(userId string, vType VerificationType, domain VerificationDomain, expiresAt time.Time) (*Verification, error) {
+func InserVerification(userId string, vType types.VerificationType, domain types.VerificationDomain, expiresAt time.Time) (*types.Verification, error) {
 	token := generateRandomString(16)
 	query := "INSERT INTO verifications (id, user_id, type, domain, token, expires_at) VALUES ($1, $2, $3, $4, $5, $6)"
 	id := uuid.New().String()
@@ -51,7 +27,7 @@ func InserVerification(userId string, vType VerificationType, domain Verificatio
 	if err != nil {
 		return nil, err
 	}
-	verification := Verification{
+	verification := types.Verification{
 		Id:        id,
 		UserId:    userId,
 		Type:      vType,
@@ -63,14 +39,14 @@ func InserVerification(userId string, vType VerificationType, domain Verificatio
 }
 
 // gets active verification record based on token and expire time
-func GetVerificationRecord(token string) (*Verification, error) {
+func GetVerificationRecord(token string) (*types.Verification, error) {
 	query := "SELECT * FROM verifications WHERE token = $1 AND expires_at < $2"
 	rows, err := DB.Query(query, token, time.Now())
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var verification Verification
+	var verification types.Verification
 	if rows.Next() {
 		err := rows.Scan(&verification.Id, &verification.UserId, &verification.Type, &verification.Domain, &verification.Token, &verification.ExpiresAt)
 		if err != nil {
@@ -81,6 +57,20 @@ func GetVerificationRecord(token string) (*Verification, error) {
 	return nil, nil
 }
 
-func InsertRegisterEmailVerification(userId string) (*Verification, error) {
-	return InserVerification(userId, VerificationTypeEmail, VerificationDomainRegister, time.Now().Add(time.Hour*24))
+func InsertRegisterEmailVerification(userId string) (*types.Verification, error) {
+	return InserVerification(userId, types.VerificationTypeEmail, types.VerificationDomainRegister, time.Now().Add(time.Hour*24))
+}
+
+func InsertPasswordResetVerification(userId string) (*types.Verification, error) {
+	return InserVerification(userId, types.VerificationTypeEmail, types.VerificationDomainPasswordReset, time.Now().Add(time.Hour*24))
+}
+
+func InsertEmailUpdateVerification(userId string) (*types.Verification, error) {
+	return InserVerification(userId, types.VerificationTypeEmail, types.VerificationDomainEmailUpdate, time.Now().Add(time.Hour*24))
+}
+
+func DeleteVerification(verification *types.Verification) error {
+	query := "DELETE FROM verifications WHERE id=$1"
+	_, err := DB.Exec(query, verification.Id)
+	return err
 }

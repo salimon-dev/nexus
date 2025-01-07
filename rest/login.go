@@ -1,12 +1,12 @@
-package handlers
+package rest
 
 import (
 	"net/http"
 
-	"salimon/proxy/db"
-	"salimon/proxy/helpers"
-	"salimon/proxy/middlewares"
-	"salimon/proxy/types"
+	"salimon/nexus/db"
+	"salimon/nexus/helpers"
+	"salimon/nexus/middlewares"
+	"salimon/nexus/types"
 
 	"github.com/labstack/echo/v4"
 )

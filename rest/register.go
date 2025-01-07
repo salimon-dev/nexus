@@ -1,14 +1,14 @@
-package handlers
+package rest
 
 import (
 	"crypto/md5"
 	"encoding/hex"
 	"net/http"
 
-	"salimon/proxy/db"
-	"salimon/proxy/mail"
-	"salimon/proxy/middlewares"
-	"salimon/proxy/types"
+	"salimon/nexus/db"
+	"salimon/nexus/mail"
+	"salimon/nexus/middlewares"
+	"salimon/nexus/types"
 
 	"github.com/labstack/echo/v4"
 )
@@ -58,5 +58,5 @@ func RegisterHandler(ctx echo.Context) error {
 	}
 
 	mail.SendRegisterVerificationEmail(user)
-	return ctx.JSON(http.StatusOK, db.GetUserPublicObject(user))
+	return ctx.String(http.StatusOK, "registered")
 }

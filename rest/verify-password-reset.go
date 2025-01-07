@@ -1,23 +1,25 @@
-package handlers
+package rest
 
 import (
+	"crypto/md5"
 	"net/http"
 
-	"salimon/proxy/db"
-	"salimon/proxy/helpers"
-	"salimon/proxy/middlewares"
-	"salimon/proxy/types"
+	"salimon/nexus/db"
+	"salimon/nexus/helpers"
+	"salimon/nexus/middlewares"
+	"salimon/nexus/types"
 
 	"github.com/labstack/echo/v4"
 )
 
-type verifyRegisterSchema struct {
-	Email string `json:"email" validate:"required,email"`
-	Token string `json:"token" validate:"required,gte=5"`
+type verifyPasswordResetPayload struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,gte=5"`
+	Token    string `json:"token" validate:"required"`
 }
 
-func VerifyRegisterHandler(ctx echo.Context) error {
-	payload := new(verifyRegisterSchema)
+func VerifyPasswordResetHandler(ctx echo.Context) error {
+	payload := new(verifyPasswordResetPayload)
 	if err := ctx.Bind(payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
 	}
@@ -37,7 +39,7 @@ func VerifyRegisterHandler(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 	if verification == nil {
-		return ctx.String(http.StatusUnauthorized, "unauthorized")
+		return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("token", "token is invalid"))
 	}
 
 	// fetch user based on email of verfication
@@ -49,8 +51,10 @@ func VerifyRegisterHandler(ctx echo.Context) error {
 		return ctx.String(http.StatusUnauthorized, "unauthorized")
 	}
 
-	// update user status to active
-	user.Status = types.UserStatusActive
+	// update user password
+
+	passwordHash := md5.Sum([]byte(payload.Password))
+	user.Password = string(passwordHash[:])
 	err = db.UpdateUser(user)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, err.Error())

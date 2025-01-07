@@ -3,7 +3,7 @@ package helpers
 import (
 	"fmt"
 	"os"
-	"salimon/proxy/types"
+	"salimon/nexus/types"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"

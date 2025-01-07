@@ -1,29 +1,84 @@
 package middlewares
 
 import (
-	"net/http"
+	"fmt"
+	"reflect"
 
 	"github.com/go-playground/validator"
-	"github.com/labstack/echo/v4"
 )
 
-type HTTPValidator struct {
-	validator *validator.Validate
+type ValidationError struct {
+	Field string `json:"field"`
+	Tag   string `json:"tag"`
+	Param string `json:"param"`
 }
 
-func (cv *HTTPValidator) Validate(i interface{}) error {
-	if err := cv.validator.Struct(i); err != nil {
-		errors := map[string]string{}
-		if _, ok := err.(*validator.InvalidValidationError); ok {
-			return echo.NewHTTPError(http.StatusBadRequest, errors)
-		}
-		for _, err := range err.(validator.ValidationErrors) {
-			field := err.Field()
-			tag := err.Tag()
-			errors[field] = "is " + tag
-		}
-
-		return echo.NewHTTPError(http.StatusBadRequest, errors)
+func translateValidationError(err *ValidationError) string {
+	switch err.Tag {
+	case "required":
+		return fmt.Sprintf("%s is required", err.Field)
+	case "unique":
+		return fmt.Sprintf("%s must be unique", err.Field)
+	case "gte":
+		return fmt.Sprintf("%s must be more or equal than %s charachters", err.Field, err.Param)
+	case "gt":
+		return fmt.Sprintf("%s must be more than %s charachters", err.Field, err.Param)
+	default:
+		return "undefined validation error"
 	}
-	return nil
+}
+
+func parseValidationErrors(errors []ValidationError) map[string]string {
+	result := map[string]string{}
+	for _, err := range errors {
+		result[err.Field] = translateValidationError(&err)
+	}
+	return result
+}
+
+func getJSONFieldName(structType reflect.Type, fieldName string) string {
+	field, found := structType.FieldByName(fieldName)
+	if !found {
+		return fieldName // fallback to the struct field name
+	}
+	jsonTag := field.Tag.Get("json")
+	if jsonTag == "" || jsonTag == "-" {
+		return fieldName // fallback to the struct field name
+	}
+	return jsonTag
+}
+
+func ValidatePayload(payload interface{}) (map[string]string, error) {
+	validate := validator.New()
+	err := validate.Struct(payload)
+	if err != nil {
+		if _, ok := err.(*validator.InvalidValidationError); ok {
+			return nil, err
+		}
+		validationErrors := err.(validator.ValidationErrors)
+		result := map[string]string{}
+		payloadType := reflect.TypeOf(payload)
+
+		for _, err := range validationErrors {
+			field := err.StructField()
+			name := getJSONFieldName(payloadType, field)
+			tag := err.Tag()
+			param := err.Param()
+			valError := ValidationError{
+				Field: name,
+				Tag:   tag,
+				Param: param,
+			}
+			result[name] = translateValidationError(&valError)
+		}
+		return result, nil
+	}
+	return nil, nil
+
+}
+
+func MakeSingleValidationError(field string, message string) map[string]string {
+	result := map[string]string{}
+	result[field] = message
+	return result
 }

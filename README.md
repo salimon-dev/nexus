@@ -1,6 +1,6 @@
-# Proxy
+# Nexus
 
-salimon proxy service is the gate that connects users to entities and manages profiles, authorization, credits and balancing
+salimon nexus service is the gate that connects users to entities and manages profiles, authorization, credits and balancing
 
 ## Environment variables
 

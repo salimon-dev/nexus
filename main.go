@@ -3,17 +3,16 @@ package main
 import (
 	"salimon/proxy/db"
 	"salimon/proxy/handlers"
-
-	"github.com/go-playground/validator"
+	"salimon/proxy/mail"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
+	mail.SetupEmailQueue()
 	db.SetupDatabase()
 	e := echo.New()
-	e.Validator = &HttpValidator{validator: validator.New()}
 	e.HideBanner = true
 	// Middleware
 	e.Use(middleware.Recover())

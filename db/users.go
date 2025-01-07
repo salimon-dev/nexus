@@ -1,35 +1,25 @@
 package db
 
 import (
+	"database/sql"
+	"salimon/proxy/types"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-type User struct {
-	Id           string    `json:"id"`
-	Username     string    `json:"username"`
-	Email        string    `json:"email"`
-	Password     string    `json:"password"`
-	Credit       int32     `json:"credit"`
-	Usage        int32     `json:"usage"`
-	Role         string    `json:"role"`
-	RegisteredAt time.Time `json:"registered_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-}
-
 // inserts a new user into the database
-func InsertUser(username string, email string, password string, credit int32, usage int32, role string) (*User, error) {
-	query := "INSERT INTO users (id, username, email, password, credit, usage, role, registered_at, updated_at) VALUES ($1, $2, $3, $4, $5, $7)"
+func InsertUser(username string, email string, password string, credit int32, usage int32, role types.UserRole, status types.UserStatus) (*types.User, error) {
+	query := "INSERT INTO users (id, username, email, password, credit, usage, role, status, registered_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
 	id := uuid.New().String()
 	registeredAt := time.Now()
 	updatedAt := time.Now()
 
-	_, err := DB.Exec(query, id, username, email, password, credit, usage, role, registeredAt, updatedAt)
+	_, err := DB.Exec(query, id, username, email, password, credit, usage, role, status, registeredAt, updatedAt)
 	if err != nil {
 		return nil, err
 	}
-	user := User{
+	user := types.User{
 		Id:           id,
 		Username:     username,
 		Email:        email,
@@ -37,6 +27,7 @@ func InsertUser(username string, email string, password string, credit int32, us
 		Credit:       credit,
 		Usage:        usage,
 		Role:         role,
+		Status:       status,
 		RegisteredAt: registeredAt,
 		UpdatedAt:    updatedAt,
 	}
@@ -44,7 +35,7 @@ func InsertUser(username string, email string, password string, credit int32, us
 }
 
 // updates a user in database
-func UpdateUser(user *User) error {
+func UpdateUser(user *types.User) error {
 	updatedAt := time.Now()
 	query := "UPDATE users SET username=$1, email=$2, password=$3, credit=$4, usage=$5, role=$6, updated_at=$7 WHERE id=$8"
 
@@ -59,22 +50,53 @@ func DeleteUser(id string) error {
 	return err
 }
 
-func FindUserByAuth(email string, password string) (*User, error) {
-	query := "SELECT * FROM users WHERE email=$1 AND password=$2"
-
-	rows, err := DB.Query(query, email, password)
+func parseSingleUserQuery(rows *sql.Rows, err error) (*types.User, error) {
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
-	var user User
+	var user types.User
 	if rows.Next() {
-		err := rows.Scan(&user.Id, &user.Username, &user.Email, &user.Password, &user.Credit, &user.Usage, &user.RegisteredAt, &user.UpdatedAt)
+		err := rows.Scan(&user.Id, &user.Username, &user.Email, &user.Password, &user.Credit, &user.Usage, &user.Role, &user.Status, &user.RegisteredAt, &user.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
 		return &user, nil
 	}
 	return nil, nil
+}
+
+func FindUserByAuth(email string, password string) (*types.User, error) {
+	query := "SELECT * FROM users WHERE email=$1 AND password=$2"
+
+	rows, err := DB.Query(query, email, password)
+	return parseSingleUserQuery(rows, err)
+}
+
+func FindUserByEmail(email string) (*types.User, error) {
+	query := "SELECT * FROM users WHERE email=$1"
+
+	rows, err := DB.Query(query, email)
+	return parseSingleUserQuery(rows, err)
+}
+
+func FindUserByUsername(username string) (*types.User, error) {
+	query := "SELECT * FROM users WHERE username=$1"
+
+	rows, err := DB.Query(query, username)
+	return parseSingleUserQuery(rows, err)
+}
+
+func GetUserPublicObject(user *types.User) types.PublicUser {
+	return types.PublicUser{
+		Id:           user.Id,
+		Username:     user.Username,
+		Email:        user.Email,
+		Credit:       user.Credit,
+		Usage:        user.Usage,
+		Role:         types.UserRoleToString(user.Role),
+		Status:       types.UserStatusToString(user.Status),
+		RegisteredAt: user.RegisteredAt,
+		UpdatedAt:    user.UpdatedAt,
+	}
 }

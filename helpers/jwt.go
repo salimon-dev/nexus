@@ -13,7 +13,7 @@ func getSecretKey() []byte {
 	return []byte(os.Getenv("JWT_SECRET"))
 }
 
-func generateJWT(claims jwt.MapClaims) (string, error) {
+func generateJWTString(claims jwt.MapClaims) (string, error) {
 	secretKey := getSecretKey()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -27,7 +27,7 @@ func generateAccessToken(userId string) (string, error) {
 		"sub": userId,
 		"exp": time.Now().Add(time.Hour * 2).Unix(),
 	}
-	return generateJWT(claims)
+	return generateJWTString(claims)
 }
 
 func generateRefreshToken(userId string) (string, error) {
@@ -35,7 +35,7 @@ func generateRefreshToken(userId string) (string, error) {
 		"sub": userId,
 		"exp": time.Now().Add(time.Hour * 24 * 14).Unix(),
 	}
-	return generateJWT(claims)
+	return generateJWTString(claims)
 }
 
 func GenerateJWT(user *types.User) (*string, *string, error) {

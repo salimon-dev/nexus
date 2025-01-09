@@ -74,3 +74,31 @@ func DeleteVerification(verification *types.Verification) error {
 	_, err := DB.Exec(query, verification.Id)
 	return err
 }
+
+func GetVerificationsByUserId(userId string) ([]types.Verification, error) {
+	limit := 32
+	records := make([]types.Verification, limit)
+	index := 0
+	query := "SELECT * FROM verifications WHERE user_id = $1"
+
+	rows, err := DB.Query(query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() && index < limit {
+		var verification types.Verification
+		err := rows.Scan(&verification.Id, &verification.UserId, &verification.Type, &verification.Domain, &verification.Token, &verification.ExpiresAt)
+		if err != nil {
+			return nil, err
+		}
+		records[index] = verification
+		index += 1
+	}
+	results := make([]types.Verification, index)
+	for i := 0; i < index; i++ {
+		results[i] = records[i]
+	}
+	return results, err
+}

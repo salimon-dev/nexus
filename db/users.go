@@ -107,3 +107,9 @@ func GetUserPublicObject(user *types.User) types.PublicUser {
 		UpdatedAt:    user.UpdatedAt,
 	}
 }
+
+func DeleteE2ETestUsers() error {
+	query := "DELETE FROM users WHERE email ILIKE '%e2e-test%'"
+	_, err := DB.Exec(query)
+	return err
+}

@@ -17,6 +17,8 @@ func translateValidationError(err *ValidationError) string {
 	switch err.Tag {
 	case "required":
 		return fmt.Sprintf("%s is required", err.Field)
+	case "email":
+		return fmt.Sprintf("%s must be a valid email", err.Field)
 	case "unique":
 		return fmt.Sprintf("%s must be unique", err.Field)
 	case "gte":

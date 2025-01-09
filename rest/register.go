@@ -39,7 +39,9 @@ func RegisterHandler(ctx echo.Context) error {
 		return err
 	}
 	if userByEmail != nil {
-		return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("email", "this email address is already registered"))
+		if userByEmail.Status == types.UserStatusActive {
+			return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("email", "this email address is already registered"))
+		}
 	}
 
 	userByUsername, err := db.FindUserByUsername(payload.Username)
@@ -47,7 +49,9 @@ func RegisterHandler(ctx echo.Context) error {
 		return err
 	}
 	if userByUsername != nil {
-		return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("username", "this username is already registered"))
+		if userByEmail.Status == types.UserStatusActive {
+			return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("username", "this username is already registered"))
+		}
 	}
 
 	passwordHash := md5.Sum([]byte(payload.Password))

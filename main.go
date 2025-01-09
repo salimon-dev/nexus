@@ -38,6 +38,10 @@ func main() {
 	// WebSocket route
 	e.GET("/sck", websocket.WsHandler)
 
+	// E2E control Endpoints
+	e.GET("/e2e/info", rest.E2EInfoHandler)
+	e.POST("/e2e/reset", rest.E2EResetHandler)
+
 	// Start the server
 	port := "80"
 	e.Logger.Fatal(e.Start(":" + port))

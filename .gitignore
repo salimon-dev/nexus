@@ -1,2 +1,4 @@
 .env
 bootstrap
+*-cover.out
+*-cover.html

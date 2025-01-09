@@ -6,9 +6,14 @@ import (
 	"log"
 	"net/smtp"
 	"os"
+	"strings"
 )
 
 func SendRawEmail(to string, subject string, body string) error {
+	if strings.Contains(to, "e2e-test") {
+		return nil
+	}
+
 	smtpHost := os.Getenv("SMTP_ENDPOINT")
 	smtpPort := os.Getenv("SMTP_PORT")
 	username := os.Getenv("SMTP_USERNAME")

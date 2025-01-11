@@ -1,6 +1,10 @@
 package types
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type VerificationType int8
 
@@ -19,10 +23,10 @@ const (
 )
 
 type Verification struct {
-	Id        string             `json:"id"`
-	UserId    string             `json:"user_id"`
-	Type      VerificationType   `json:"type"`
-	Domain    VerificationDomain `json:"domain"`
-	Token     string             `json:"token"`
-	ExpiresAt time.Time          `json:"expires_at"`
+	Id        uuid.UUID          `json:"id" gorm:"type:uuid;primaryKey"`
+	UserId    uuid.UUID          `json:"user_id" gorm:"type:uuid"`
+	Type      VerificationType   `json:"type" gorm:"type:numeric"`
+	Domain    VerificationDomain `json:"domain" gorm:"type:numeric"`
+	Token     string             `json:"token" gorm:"size:16"`
+	ExpiresAt time.Time          `json:"expires_at" gorm:"type:TIMESTAMP WITH TIME ZONE"`
 }

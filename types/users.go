@@ -2,6 +2,8 @@ package types
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type UserStatus int8
@@ -47,16 +49,16 @@ func UserRoleToString(role UserRole) string {
 }
 
 type User struct {
-	Id           string     `json:"id"`
-	Username     string     `json:"username"`
-	Email        string     `json:"email"`
-	Password     string     `json:"password"`
-	Credit       int32      `json:"credit"`
-	Usage        int32      `json:"usage"`
-	Role         UserRole   `json:"role"`
-	Status       UserStatus `json:"status"`
-	RegisteredAt time.Time  `json:"registered_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	Id           uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
+	Username     string     `json:"username" gorm:"size:32;unique;not null"`
+	Email        string     `json:"email" gorm:"size:64;unique;not null"`
+	Password     string     `json:"password" gorm:"size:32"`
+	Credit       int32      `json:"credit" gorm:"type:numeric"`
+	Usage        int32      `json:"usage" gorm:"type:numeric"`
+	Role         UserRole   `json:"role" gorm:"type:numeric"`
+	Status       UserStatus `json:"status" gorm:"type:numeric"`
+	RegisteredAt time.Time  `json:"registered_at" gorm:"type:TIMESTAMP WITH TIME ZONE"`
+	UpdatedAt    time.Time  `json:"updated_at" gorm:"type:TIMESTAMP WITH TIME ZONE"`
 }
 
 type PublicUser struct {

@@ -1,9 +1,11 @@
 package middlewares
 
 import (
+	"fmt"
 	"net/http"
 	"salimon/nexus/db"
 	"salimon/nexus/helpers"
+	"salimon/nexus/types"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -26,9 +28,10 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return ctx.String(http.StatusUnauthorized, "unauthorized")
 		}
 
-		user, err := db.FindUserById(*sub)
-
-		if err != nil {
+		var user *types.User
+		result := db.UsersModel().Where("id = ?", *sub).First(&user)
+		if result.Error != nil {
+			fmt.Println(result.Error)
 			return ctx.String(http.StatusInternalServerError, "internal error")
 		}
 		if user == nil {

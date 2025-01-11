@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
 
 	"salimon/nexus/db"
@@ -32,9 +33,12 @@ func LoginHandler(ctx echo.Context) error {
 	}
 
 	// fetch user based on email of verfication
-	user, err := db.FindUserByAuth(payload.Email, payload.Password)
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+	var user *types.User
+
+	result := db.DB.Where("email = ?", payload.Email).Where("password = ?").First(user)
+	if result != nil {
+		fmt.Println(result.Error)
+		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 	if user == nil {
 		return ctx.String(http.StatusUnauthorized, "unauthorized")

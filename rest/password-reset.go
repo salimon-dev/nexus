@@ -1,10 +1,12 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
 	"salimon/nexus/db"
 	"salimon/nexus/mail"
 	"salimon/nexus/middlewares"
+	"salimon/nexus/types"
 
 	"github.com/labstack/echo/v4"
 )
@@ -28,9 +30,11 @@ func PasswordResetHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 	// fetch user based on email of verfication
-	user, err := db.FindUserByEmail(payload.Email)
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+	var user *types.User
+	result := db.UsersModel().Where("email = ?", payload.Email).First(&user)
+	if result.Error != nil {
+		fmt.Println(result.Error)
+		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 	if user == nil {
 		return ctx.String(http.StatusOK, "verification sent")

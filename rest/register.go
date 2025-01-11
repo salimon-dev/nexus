@@ -3,13 +3,16 @@ package rest
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"net/http"
+	"time"
 
 	"salimon/nexus/db"
 	"salimon/nexus/mail"
 	"salimon/nexus/middlewares"
 	"salimon/nexus/types"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -34,33 +37,54 @@ func RegisterHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
-	userByEmail, err := db.FindUserByEmail(payload.Email)
-	if err != nil {
-		return err
-	}
-	if userByEmail != nil {
-		if userByEmail.Status == types.UserStatusActive {
-			return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("email", "this email address is already registered"))
-		}
-	}
-
-	userByUsername, err := db.FindUserByUsername(payload.Username)
-	if err != nil {
-		return err
-	}
-	if userByUsername != nil {
-		if userByEmail.Status == types.UserStatusActive {
-			return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("username", "this username is already registered"))
-		}
-	}
-
 	passwordHash := md5.Sum([]byte(payload.Password))
-	user, err := db.InsertUser(payload.Username, payload.Email, hex.EncodeToString(passwordHash[:]), 15000, 0, types.UserRoleMember, types.UserStatusPending)
+	password := hex.EncodeToString(passwordHash[:])
 
+	user, err := db.FindUser("username = ? AND email = ?", payload.Username, payload.Email)
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		fmt.Println(err)
+		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 
-	mail.SendRegisterVerificationEmail(user)
+	if user != nil {
+		// user is registered and in active/inactive status
+		switch user.Status {
+		case types.UserStatusActive:
+		case types.UserStatusInActive:
+			return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("action", "a user with same username or email already exists"))
+		default:
+			break
+		}
+		// user is pending status. so re-register
+		user.Password = password
+		user.RegisteredAt = time.Now()
+		err := db.UpdateUser(user)
+		if err != nil {
+			fmt.Println(err)
+			return ctx.String(http.StatusInternalServerError, "internal error")
+		}
+		mail.SendRegisterVerificationEmail(user)
+	} else {
+		user = &types.User{
+			Id:           uuid.New(),
+			Username:     payload.Username,
+			Email:        payload.Email,
+			Password:     payload.Password,
+			Credit:       15000,
+			Usage:        0,
+			Role:         types.UserRoleMember,
+			Status:       types.UserStatusPending,
+			RegisteredAt: time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+		fmt.Println(user)
+		err := db.InsertUser(user)
+		if err != nil {
+			fmt.Println(err)
+			return ctx.String(http.StatusInternalServerError, "internal error")
+		}
+		mail.SendRegisterVerificationEmail(user)
+	}
 	return ctx.String(http.StatusOK, "registered")
+
 }

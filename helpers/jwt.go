@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 func getSecretKey() []byte {
@@ -39,18 +40,18 @@ func generateRefreshToken(userId string) (string, error) {
 }
 
 func GenerateJWT(user *types.User) (*string, *string, error) {
-	accessToken, err := generateAccessToken(user.Id)
+	accessToken, err := generateAccessToken(user.Id.String())
 	if err != nil {
 		return nil, nil, err
 	}
-	refreshToken, err := generateRefreshToken(user.Id)
+	refreshToken, err := generateRefreshToken(user.Id.String())
 	if err != nil {
 		return nil, nil, err
 	}
 	return &accessToken, &refreshToken, nil
 }
 
-func VerifyJWT(token string) (*string, error) {
+func VerifyJWT(token string) (*uuid.UUID, error) {
 	secretKey := getSecretKey()
 
 	result, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
@@ -66,7 +67,11 @@ func VerifyJWT(token string) (*string, error) {
 
 	if claims, ok := result.Claims.(jwt.MapClaims); ok && result.Valid {
 		sub, err := claims.GetSubject()
-		return &sub, err
+		if err != nil {
+			return nil, err
+		}
+		uuid, err := uuid.FromBytes([]byte(sub))
+		return &uuid, err
 	} else {
 		return nil, nil
 	}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func generateRandomString(n int) string {
@@ -18,87 +19,74 @@ func generateRandomString(n int) string {
 	return string(result)
 }
 
-func InserVerification(userId string, vType types.VerificationType, domain types.VerificationDomain, expiresAt time.Time) (*types.Verification, error) {
-	token := generateRandomString(16)
-	query := "INSERT INTO verifications (id, user_id, type, domain, token, expires_at) VALUES ($1, $2, $3, $4, $5, $6)"
-	id := uuid.New().String()
+func VerificationsModel() *gorm.DB {
+	return DB.Model(types.User{})
+}
 
-	_, err := DB.Exec(query, id, userId, vType, domain, token, expiresAt)
-	if err != nil {
-		return nil, err
+func FindVerification(query interface{}, args ...interface{}) (*types.Verification, error) {
+	var user types.Verification
+
+	result := DB.Model(types.Verification{}).Where(query, args...).Find(&user)
+
+	if result.RowsAffected == 0 {
+		return nil, result.Error
+	} else {
+		return &user, nil
 	}
-	verification := types.Verification{
-		Id:        id,
-		UserId:    userId,
-		Type:      vType,
-		Domain:    domain,
-		Token:     token,
-		ExpiresAt: expiresAt,
-	}
-	return &verification, nil
+}
+
+func InsertVerification(verification *types.Verification) error {
+	result := DB.Model(types.Verification{}).Create(verification)
+	return result.Error
 }
 
 // gets active verification record based on token and expire time
 func GetVerificationRecord(token string) (*types.Verification, error) {
-	query := "SELECT * FROM verifications WHERE token = $1 AND expires_at < $2"
-	rows, err := DB.Query(query, token, time.Now())
-	if err != nil {
-		return nil, err
+	var verification *types.Verification
+	result := DB.Where("token = ?", token).First(verification)
+	return verification, result.Error
+}
+
+func InsertRegisterEmailVerification(userId uuid.UUID) (*types.Verification, error) {
+	verification := types.Verification{
+		Id:        uuid.New(),
+		UserId:    userId,
+		Type:      types.VerificationTypeEmail,
+		Domain:    types.VerificationDomainRegister,
+		Token:     generateRandomString(16),
+		ExpiresAt: time.Now().Add(2 * time.Hour),
 	}
-	defer rows.Close()
-	var verification types.Verification
-	if rows.Next() {
-		err := rows.Scan(&verification.Id, &verification.UserId, &verification.Type, &verification.Domain, &verification.Token, &verification.ExpiresAt)
-		if err != nil {
-			return nil, err
-		}
-		return &verification, nil
+	err := InsertVerification(&verification)
+	return &verification, err
+}
+
+func InsertPasswordResetVerification(userId uuid.UUID) (*types.Verification, error) {
+	verification := types.Verification{
+		Id:        uuid.New(),
+		UserId:    userId,
+		Type:      types.VerificationTypeEmail,
+		Domain:    types.VerificationDomainPasswordReset,
+		Token:     generateRandomString(16),
+		ExpiresAt: time.Now().Add(2 * time.Hour),
 	}
-	return nil, nil
+	err := InsertVerification(&verification)
+	return &verification, err
 }
 
-func InsertRegisterEmailVerification(userId string) (*types.Verification, error) {
-	return InserVerification(userId, types.VerificationTypeEmail, types.VerificationDomainRegister, time.Now().Add(time.Hour*24))
-}
-
-func InsertPasswordResetVerification(userId string) (*types.Verification, error) {
-	return InserVerification(userId, types.VerificationTypeEmail, types.VerificationDomainPasswordReset, time.Now().Add(time.Hour*24))
-}
-
-func InsertEmailUpdateVerification(userId string) (*types.Verification, error) {
-	return InserVerification(userId, types.VerificationTypeEmail, types.VerificationDomainEmailUpdate, time.Now().Add(time.Hour*24))
+func InsertEmailUpdateVerification(userId uuid.UUID) (*types.Verification, error) {
+	verification := types.Verification{
+		Id:        uuid.New(),
+		UserId:    userId,
+		Type:      types.VerificationTypeEmail,
+		Domain:    types.VerificationDomainEmailUpdate,
+		Token:     generateRandomString(16),
+		ExpiresAt: time.Now().Add(2 * time.Hour),
+	}
+	err := InsertVerification(&verification)
+	return &verification, err
 }
 
 func DeleteVerification(verification *types.Verification) error {
-	query := "DELETE FROM verifications WHERE id=$1"
-	_, err := DB.Exec(query, verification.Id)
-	return err
-}
-
-func GetVerificationsByUserId(userId string) ([]types.Verification, error) {
-	limit := 32
-	records := make([]types.Verification, limit)
-	index := 0
-	query := "SELECT * FROM verifications WHERE user_id = $1"
-
-	rows, err := DB.Query(query, userId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	if rows.Next() && index < limit {
-		var verification types.Verification
-		err := rows.Scan(&verification.Id, &verification.UserId, &verification.Type, &verification.Domain, &verification.Token, &verification.ExpiresAt)
-		if err != nil {
-			return nil, err
-		}
-		records[index] = verification
-		index += 1
-	}
-	results := make([]types.Verification, index)
-	for i := 0; i < index; i++ {
-		results[i] = records[i]
-	}
-	return results, err
+	result := DB.Delete("id = ?", verification.Id)
+	return result.Error
 }

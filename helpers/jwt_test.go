@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 func TestJWTString(t *testing.T) {
-	sub := "someid"
+	sub := uuid.New()
 	token, err := generateJWTString(jwt.MapClaims{"sub": sub})
 
 	if err != nil {
@@ -32,7 +33,7 @@ func TestJWTString(t *testing.T) {
 
 func TestJWTTokens(t *testing.T) {
 	user := types.User{
-		Id: "someid",
+		Id: uuid.New(),
 	}
 
 	accessToken, refreshToken, err := GenerateJWT(&user)

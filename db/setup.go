@@ -1,23 +1,24 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
+	"salimon/nexus/types"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // Import file driver
 	_ "github.com/lib/pq"                                // Import PostgreSQL driver
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var DB *sql.DB
+var DB *gorm.DB
 
 // setup database connection
 func SetupDatabase() {
-	connectToDb()
-	migrateToDb()
+	DB = initGormConnection()
+	DB.AutoMigrate(types.User{})
+	DB.AutoMigrate(types.Verification{})
 }
 
 // generate connection string from  environment variables
@@ -31,34 +32,11 @@ func generateConnectionString() string {
 	return connectionStr
 }
 
-// connects to db, if fails, terminates the service
-func connectToDb() {
-	connectionStr := generateConnectionString()
-	var err error
-	DB, err = sql.Open("postgres", connectionStr)
+func initGormConnection() *gorm.DB {
+	connectionString := generateConnectionString()
+	db, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
-	log.Println("connected to database")
-}
-
-func migrateToDb() {
-	driver, err := postgres.WithInstance(DB, &postgres.Config{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrations",
-		"postgres",
-		driver,
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatal(err)
-	}
-	log.Println("Migration applied successfully!")
+	return db
 }

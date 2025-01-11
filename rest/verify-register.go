@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
 
 	"salimon/nexus/db"
@@ -41,9 +42,11 @@ func VerifyRegisterHandler(ctx echo.Context) error {
 	}
 
 	// fetch user based on email of verfication
-	user, err := db.FindUserByEmail(payload.Email)
+	var user *types.User
+	result := db.UsersModel().Where("email = ?", payload.Email).First(&user)
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		fmt.Println(result.Error)
+		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 	if user == nil {
 		return ctx.String(http.StatusUnauthorized, "unauthorized")
@@ -51,9 +54,10 @@ func VerifyRegisterHandler(ctx echo.Context) error {
 
 	// update user status to active
 	user.Status = types.UserStatusActive
-	err = db.UpdateUser(user)
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+	result = db.UsersModel().Save(user)
+	if result.Error != nil {
+		fmt.Println(result.Error)
+		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 
 	accessToken, refreshToken, err := helpers.GenerateJWT(user)

@@ -44,3 +44,9 @@ func UpdateUser(user *types.User) error {
 	result := DB.Model(types.User{}).Where("id = ?", user.Id).Updates(user)
 	return result.Error
 }
+
+func FindUsers(query interface{}, offset int, limit int, args ...interface{}) ([]types.User, error) {
+	var users []types.User
+	result := DB.Model(types.User{}).Select("*").Where(query, args...).Offset(offset).Limit(limit).Find(users)
+	return users, result.Error
+}

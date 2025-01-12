@@ -20,7 +20,7 @@ func generateRandomString(n int) string {
 }
 
 func VerificationsModel() *gorm.DB {
-	return DB.Model(types.User{})
+	return DB.Model(types.Verification{})
 }
 
 func FindVerification(query interface{}, args ...interface{}) (*types.Verification, error) {
@@ -48,6 +48,10 @@ func GetVerificationRecord(token string) (*types.Verification, error) {
 }
 
 func InsertRegisterEmailVerification(userId uuid.UUID) (*types.Verification, error) {
+	result := VerificationsModel().Where("user_id = ? AND domain = ? AND type = ?", userId, types.VerificationDomainRegister, types.VerificationTypeEmail).Delete(nil)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 	verification := types.Verification{
 		Id:        uuid.New(),
 		UserId:    userId,
@@ -61,6 +65,10 @@ func InsertRegisterEmailVerification(userId uuid.UUID) (*types.Verification, err
 }
 
 func InsertPasswordResetVerification(userId uuid.UUID) (*types.Verification, error) {
+	result := VerificationsModel().Where("user_id = ? AND domain = ? AND type = ?", userId, types.VerificationDomainPasswordReset, types.VerificationTypeEmail).Delete(nil)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 	verification := types.Verification{
 		Id:        uuid.New(),
 		UserId:    userId,
@@ -74,6 +82,10 @@ func InsertPasswordResetVerification(userId uuid.UUID) (*types.Verification, err
 }
 
 func InsertEmailUpdateVerification(userId uuid.UUID) (*types.Verification, error) {
+	result := VerificationsModel().Where("user_id = ? AND domain = ? AND type = ?", userId, types.VerificationDomainEmailUpdate, types.VerificationTypeEmail).Delete(nil)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 	verification := types.Verification{
 		Id:        uuid.New(),
 		UserId:    userId,

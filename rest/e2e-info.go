@@ -1,41 +1,47 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
+	"salimon/nexus/db"
 	"salimon/nexus/types"
 
 	"github.com/labstack/echo/v4"
 )
 
 type infoGetResponse struct {
-	Users []types.User `json:"users"`
+	Users         []types.User         `json:"users"`
+	Verifications []types.Verification `json:"verifications"`
 }
 
 func E2EInfoHandler(ctx echo.Context) error {
 	response := infoGetResponse{}
-	// users, err := db.DB.Model(types.Verification{}).Select()
-	// if err != nil {
-	// 	return ctx.String(http.StatusInternalServerError, err.Error())
-	// }
-	// response.Users = users
+	var users []types.User
+	result := db.UsersModel().Select("*").Where("email ILIKE ?", "%e2e-test%").Limit(32).Find(&users)
+	if result.Error != nil {
+		fmt.Println(result)
+		return ctx.String(http.StatusInternalServerError, "internal error")
+	}
+	response.Users = users
 
-	// verifications := make([]types.Verification, 128)
-	// response := e2eInfoResponse{}
-	// users
-	// user1, err := db.FindUserByEmail("user1@e2e.com")
-	// fmt.Println(user1)
-	// if err != nil {
-	// 	return ctx.String(http.StatusInternalServerError, err.Error())
-	// }
-	// if user1 != nil {
-	// 	response.User1 = *user1
-	// }
-	// user1Verifications, err := db.GetVerificationsByUserId(user1.Id)
-	// if err != nil {
-	// 	return ctx.String(http.StatusInternalServerError, err.Error())
-	// }
-	// if user1Verifications != nil {
-	// 	response.User1Verifications = user1Verifications
-	// }
+	verifications := make([]types.Verification, 128)
+	index := 0
+	for _, user := range users {
+		var records []types.Verification
+		result = db.VerificationsModel().Select("*").Where("user_id = ?", user.Id).Find(&records)
+		if result.Error != nil {
+			continue
+		}
+		for _, record := range records {
+			verifications[index] = record
+			index = index + 1
+		}
+	}
+
+	response.Verifications = make([]types.Verification, index)
+	for i := 0; i < index; i++ {
+		response.Verifications[i] = verifications[i]
+	}
+
 	return ctx.JSON(http.StatusOK, response)
 }

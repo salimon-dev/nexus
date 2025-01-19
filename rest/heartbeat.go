@@ -8,11 +8,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type heartBeatResponse struct {
+	Name        string `json:"name"`
+	Environment string `json:"environment"`
+	Time        int64  `json:"time"`
+}
+
 func HeartBeatHandler(c echo.Context) error {
-	response := map[string]string{
-		"name":        "nexus service",
-		"environment": os.Getenv("ENV"),
-		"time":        time.Now().Format(time.RFC3339),
-	}
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(http.StatusOK, heartBeatResponse{
+		Name:        "nexus service",
+		Environment: os.Getenv("ENV"),
+		Time:        time.Now().Unix(),
+	})
 }

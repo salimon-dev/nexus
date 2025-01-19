@@ -1,7 +1,6 @@
-package rest
+package auth
 
 import (
-	"crypto/md5"
 	"fmt"
 	"net/http"
 
@@ -13,22 +12,23 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type verifyPasswordResetPayload struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,gte=5"`
-	Token    string `json:"token" validate:"required"`
+type verifyRegisterSchema struct {
+	Email string `json:"email" validate:"required,email"`
+	Token string `json:"token" validate:"required"`
 }
 
-func VerifyPasswordResetHandler(ctx echo.Context) error {
-	payload := new(verifyPasswordResetPayload)
+func VerifyRegisterHandler(ctx echo.Context) error {
+	payload := new(verifyRegisterSchema)
 	if err := ctx.Bind(payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		fmt.Println(err)
+		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 
 	// validation errors
 	vError, err := middlewares.ValidatePayload(*payload)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+		fmt.Println(err)
+		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 	if vError != nil {
 		return ctx.JSON(http.StatusBadRequest, vError)
@@ -37,28 +37,26 @@ func VerifyPasswordResetHandler(ctx echo.Context) error {
 	// get verification based on verification token
 	verification, err := db.GetVerificationRecord(payload.Token)
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		fmt.Println(err)
+		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 	if verification == nil {
-		return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("token", "token is invalid"))
+		return ctx.String(http.StatusUnauthorized, "unauthorized")
 	}
 
 	// fetch user based on email of verfication
-	var user *types.User
-	result := db.UsersModel().Where("email = ?", payload.Email).First(&user)
+	user, err := db.FindUser("email = ?", payload.Email)
 	if err != nil {
-		fmt.Println(result.Error)
+		fmt.Println(err)
 		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 	if user == nil {
 		return ctx.String(http.StatusUnauthorized, "unauthorized")
 	}
 
-	// update user password
-
-	passwordHash := md5.Sum([]byte(payload.Password))
-	user.Password = string(passwordHash[:])
-	result = db.UsersModel().Save(user)
+	// update user status to active
+	user.Status = types.UserStatusActive
+	result := db.UsersModel().Where("id = ?", user.Id).Save(user)
 	if result.Error != nil {
 		fmt.Println(result.Error)
 		return ctx.String(http.StatusInternalServerError, "internal error")
@@ -66,7 +64,7 @@ func VerifyPasswordResetHandler(ctx echo.Context) error {
 
 	accessToken, refreshToken, err := helpers.GenerateJWT(user)
 	if err != nil {
-		fmt.Println(result.Error)
+		fmt.Println(err)
 		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 

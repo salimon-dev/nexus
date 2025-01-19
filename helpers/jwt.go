@@ -70,7 +70,7 @@ func VerifyJWT(token string) (*uuid.UUID, error) {
 		if err != nil {
 			return nil, err
 		}
-		uuid, err := uuid.FromBytes([]byte(sub))
+		uuid, err := uuid.Parse(sub)
 		return &uuid, err
 	} else {
 		return nil, nil

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"salimon/nexus/auth"
 	"salimon/nexus/db"
 	"salimon/nexus/mail"
 	"salimon/nexus/middlewares"
@@ -18,22 +19,26 @@ func main() {
 	e.HideBanner = true
 	// Middleware
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{echo.GET, echo.POST, echo.DELETE, echo.PUT},
+	}))
 
 	// HTTP route
 	e.GET("/", rest.HeartBeatHandler)
 
 	// register
-	e.POST("/auth/register", rest.RegisterHandler)
-	e.POST("/auth/register/verify", rest.VerifyRegisterHandler)
+	e.POST("/auth/register", auth.RegisterHandler)
+	e.POST("/auth/register/verify", auth.VerifyRegisterHandler)
 
 	// login
-	e.POST("/auth/login", rest.LoginHandler)
+	e.POST("/auth/login", auth.LoginHandler)
 
 	// password reset
-	e.POST("/auth/password-reset", rest.PasswordResetHandler)
-	e.POST("/auth/password-reset/verify", rest.VerifyPasswordResetHandler)
+	e.POST("/auth/password-reset", auth.PasswordResetHandler)
+	e.POST("/auth/password-reset/verify", auth.VerifyPasswordResetHandler)
 
-	e.GET("/profile", rest.GetProfileHandler, middlewares.AuthMiddleware)
+	e.GET("/profile", auth.GetProfileHandler, middlewares.AuthMiddleware)
 
 	// WebSocket route
 	e.GET("/sck", websocket.WsHandler)

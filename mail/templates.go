@@ -14,7 +14,7 @@ func SendRegisterVerificationEmail(user *types.User) {
 		return
 	}
 	verifyBaseUrl := "https://salimon.net/auth/register/verify"
-	verifyUrl := fmt.Sprintf("%s/%s", verifyBaseUrl, verification.Token)
+	verifyUrl := fmt.Sprintf("%s?token=%s&email=%s", verifyBaseUrl, verification.Token, user.Email)
 
 	body := fmt.Sprintf("Hello %s,\nwelcome to the salimon network.\n\nI am Nexus, your proxy to the network and entities. please verify you email in order to complete registeration.\n%s\n\nyou can click on this link to proceed. if you have not registered in salimon network. please ignore this email.", user.Username, verifyUrl)
 	subject := "Registeration in Salimon"

@@ -13,7 +13,7 @@ import (
 
 func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
-		authorization := ctx.Request().Header.Get("authorization")
+		authorization := ctx.Request().Header.Get("Authorization")
 
 		// Check if the header is empty or doesn't start with "Bearer "
 		if authorization == "" || !strings.HasPrefix(authorization, "Bearer ") {
@@ -24,6 +24,8 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		token := strings.TrimPrefix(authorization, "Bearer ")
 
 		sub, err := helpers.VerifyJWT(token)
+
+		fmt.Println(*sub)
 		if err != nil || sub == nil {
 			return ctx.String(http.StatusUnauthorized, "unauthorized")
 		}

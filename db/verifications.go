@@ -42,9 +42,14 @@ func InsertVerification(verification *types.Verification) error {
 
 // gets active verification record based on token and expire time
 func GetVerificationRecord(token string) (*types.Verification, error) {
-	var verification *types.Verification
-	result := DB.Where("token = ?", token).First(verification)
-	return verification, result.Error
+	var verification types.Verification
+	result := DB.Model(types.Verification{}).Where("token = ?", token).Find(&verification)
+
+	if result.RowsAffected == 0 {
+		return nil, result.Error
+	} else {
+		return &verification, nil
+	}
 }
 
 func InsertRegisterEmailVerification(userId uuid.UUID) (*types.Verification, error) {

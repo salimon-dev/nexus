@@ -1,4 +1,4 @@
-package rest
+package auth
 
 import (
 	"fmt"
@@ -12,13 +12,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type verifyRegisterSchema struct {
-	Email string `json:"email" validate:"required,email"`
-	Token string `json:"token" validate:"required"`
+type loginSchema struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,gte=5"`
 }
 
-func VerifyRegisterHandler(ctx echo.Context) error {
-	payload := new(verifyRegisterSchema)
+func LoginHandler(ctx echo.Context) error {
+	payload := new(loginSchema)
 	if err := ctx.Bind(payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
 	}
@@ -32,32 +32,16 @@ func VerifyRegisterHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
-	// get verification based on verification token
-	verification, err := db.GetVerificationRecord(payload.Token)
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
-	}
-	if verification == nil {
-		return ctx.String(http.StatusUnauthorized, "unauthorized")
-	}
-
 	// fetch user based on email of verfication
 	var user *types.User
-	result := db.UsersModel().Where("email = ?", payload.Email).First(&user)
-	if err != nil {
+
+	result := db.DB.Where("email = ?", payload.Email).Where("password = ?").First(user)
+	if result != nil {
 		fmt.Println(result.Error)
 		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 	if user == nil {
 		return ctx.String(http.StatusUnauthorized, "unauthorized")
-	}
-
-	// update user status to active
-	user.Status = types.UserStatusActive
-	result = db.UsersModel().Save(user)
-	if result.Error != nil {
-		fmt.Println(result.Error)
-		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 
 	accessToken, refreshToken, err := helpers.GenerateJWT(user)

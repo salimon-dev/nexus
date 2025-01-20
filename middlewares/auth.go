@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"salimon/nexus/db"
 	"salimon/nexus/helpers"
-	"salimon/nexus/types"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -25,15 +24,13 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		sub, err := helpers.VerifyJWT(token)
 
-		fmt.Println(*sub)
 		if err != nil || sub == nil {
 			return ctx.String(http.StatusUnauthorized, "unauthorized")
 		}
 
-		var user *types.User
-		result := db.UsersModel().Where("id = ?", *sub).First(&user)
-		if result.Error != nil {
-			fmt.Println(result.Error)
+		user, err := db.FindUser("id = ?", *sub)
+		if err != nil {
+			fmt.Println(err)
 			return ctx.String(http.StatusInternalServerError, "internal error")
 		}
 		if user == nil {

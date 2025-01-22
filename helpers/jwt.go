@@ -10,11 +10,16 @@ import (
 	"github.com/google/uuid"
 )
 
+type AuthClaims struct {
+	Type   string
+	UserID uuid.UUID
+}
+
 func getSecretKey() []byte {
 	return []byte(os.Getenv("JWT_SECRET"))
 }
 
-func generateJWTString(claims jwt.MapClaims) (string, error) {
+func generateJWTString(claims jwt.Claims) (string, error) {
 	secretKey := getSecretKey()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -25,16 +30,18 @@ func generateJWTString(claims jwt.MapClaims) (string, error) {
 
 func generateAccessToken(userId string) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": userId,
-		"exp": time.Now().Add(time.Hour * 2).Unix(),
+		"sub":       userId,
+		"tokenType": "access",
+		"exp":       jwt.NewNumericDate(time.Now().Add(time.Hour * 6)),
 	}
 	return generateJWTString(claims)
 }
 
 func generateRefreshToken(userId string) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": userId,
-		"exp": time.Now().Add(time.Hour * 24 * 14).Unix(),
+		"sub":       userId,
+		"tokenType": "refresh",
+		"exp":       jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 14)),
 	}
 	return generateJWTString(claims)
 }
@@ -51,7 +58,7 @@ func GenerateJWT(user *types.User) (*string, *string, error) {
 	return &accessToken, &refreshToken, nil
 }
 
-func VerifyJWT(token string) (*uuid.UUID, error) {
+func VerifyJWT(token string) (*AuthClaims, error) {
 	secretKey := getSecretKey()
 
 	result, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
@@ -66,12 +73,24 @@ func VerifyJWT(token string) (*uuid.UUID, error) {
 	}
 
 	if claims, ok := result.Claims.(jwt.MapClaims); ok && result.Valid {
-		sub, err := claims.GetSubject()
+		result := AuthClaims{}
+		sub, ok := claims["sub"].(string)
+		if !ok {
+			return nil, nil
+		}
+		uuid, err := uuid.Parse(sub)
 		if err != nil {
 			return nil, err
 		}
-		uuid, err := uuid.Parse(sub)
-		return &uuid, err
+		result.UserID = uuid
+
+		tokenType, ok := claims["tokenType"].(string)
+		if !ok {
+			return nil, nil
+		}
+
+		result.Type = tokenType
+		return &result, nil
 	} else {
 		return nil, nil
 	}

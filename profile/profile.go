@@ -1,4 +1,4 @@
-package auth
+package profile
 
 import (
 	"net/http"
@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func GetProfileHandler(ctx echo.Context) error {
+func GetHandler(ctx echo.Context) error {
 	user := ctx.Get("user").(*types.User)
 
 	return ctx.JSON(http.StatusOK, db.GetUserPublicObject(user))

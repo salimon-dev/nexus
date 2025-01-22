@@ -12,13 +12,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type loginSchema struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,gte=5"`
+type rotatePayloadSchema struct {
+	Token string `json:"token" validate:"required"`
 }
 
-func LoginHandler(ctx echo.Context) error {
-	payload := new(loginSchema)
+func RotateHandler(ctx echo.Context) error {
+	payload := new(rotatePayloadSchema)
 	if err := ctx.Bind(payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
 	}
@@ -32,11 +31,23 @@ func LoginHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
-	// fetch user based on email of verfication
-	user, err := db.FindUser("email = ? AND password = ?", payload.Email, payload.Password)
+	claims, err := helpers.VerifyJWT(payload.Token)
 	if err != nil {
-		fmt.Println(err.Error())
-		return ctx.String(http.StatusInternalServerError, "internall error")
+		fmt.Println(err)
+		return ctx.String(http.StatusUnauthorized, "unauthorized")
+	}
+	if claims == nil {
+		return ctx.String(http.StatusUnauthorized, "unauthorized")
+	}
+
+	if claims.Type != "refresh" {
+		return ctx.String(http.StatusUnauthorized, "unauthorized")
+	}
+
+	user, err := db.FindUser("id = ?", claims.UserID)
+	if err != nil {
+		fmt.Println(err)
+		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 	if user == nil {
 		return ctx.String(http.StatusUnauthorized, "unauthorized")

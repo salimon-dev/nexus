@@ -3,8 +3,10 @@ package main
 import (
 	"salimon/nexus/auth"
 	"salimon/nexus/db"
+	"salimon/nexus/e2e"
 	"salimon/nexus/mail"
 	"salimon/nexus/middlewares"
+	"salimon/nexus/profile"
 	"salimon/nexus/rest"
 	"salimon/nexus/websocket"
 
@@ -33,19 +35,20 @@ func main() {
 
 	// login
 	e.POST("/auth/login", auth.LoginHandler)
+	e.POST("/auth/rotate", auth.RotateHandler)
 
 	// password reset
 	e.POST("/auth/password-reset", auth.PasswordResetHandler)
 	e.POST("/auth/password-reset/verify", auth.VerifyPasswordResetHandler)
 
-	e.GET("/profile", auth.GetProfileHandler, middlewares.AuthMiddleware)
+	e.GET("/profile", profile.GetHandler, middlewares.AuthMiddleware)
 
 	// WebSocket route
 	e.GET("/sck", websocket.WsHandler)
 
 	// E2E control Endpoints
-	e.GET("/e2e/info", rest.E2EInfoHandler)
-	e.POST("/e2e/reset", rest.E2EResetHandler)
+	e.GET("/e2e/info", e2e.E2EInfoHandler)
+	e.POST("/e2e/reset", e2e.E2EResetHandler)
 
 	// Start the server
 	port := "80"

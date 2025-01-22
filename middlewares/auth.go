@@ -22,13 +22,17 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Extract the token part from the header
 		token := strings.TrimPrefix(authorization, "Bearer ")
 
-		sub, err := helpers.VerifyJWT(token)
+		claims, err := helpers.VerifyJWT(token)
 
-		if err != nil || sub == nil {
+		if err != nil || claims == nil {
 			return ctx.String(http.StatusUnauthorized, "unauthorized")
 		}
 
-		user, err := db.FindUser("id = ?", *sub)
+		if claims.Type != "access" {
+			return ctx.String(http.StatusUnauthorized, "unauthorized")
+		}
+
+		user, err := db.FindUser("id = ?", claims.UserID)
 		if err != nil {
 			fmt.Println(err)
 			return ctx.String(http.StatusInternalServerError, "internal error")
@@ -37,7 +41,6 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return ctx.String(http.StatusUnauthorized, "unauthorized")
 		}
 
-		ctx.Set("sub", sub)
 		ctx.Set("user", user)
 
 		return next(ctx)

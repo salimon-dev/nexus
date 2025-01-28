@@ -5,9 +5,11 @@ import (
 	"log"
 	"os"
 	"salimon/nexus/types"
+	"time"
 
 	_ "github.com/golang-migrate/migrate/v4/source/file" // Import file driver
-	_ "github.com/lib/pq"                                // Import PostgreSQL driver
+	"github.com/google/uuid"
+	_ "github.com/lib/pq" // Import PostgreSQL driver
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -19,6 +21,8 @@ func SetupDatabase() {
 	DB = initGormConnection()
 	DB.AutoMigrate(types.User{})
 	DB.AutoMigrate(types.Verification{})
+	DB.AutoMigrate(types.Entity{})
+	insertE2EEntity()
 }
 
 // generate connection string from  environment variables
@@ -39,4 +43,18 @@ func initGormConnection() *gorm.DB {
 		log.Fatal(err.Error())
 	}
 	return db
+}
+
+func insertE2EEntity() {
+	entity := types.Entity{
+		Id:          uuid.New(),
+		Name:        "e2e",
+		Description: "e2e testing entity for nexus operations",
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+	err := InsertEntity(&entity)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }

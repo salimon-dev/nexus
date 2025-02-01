@@ -51,8 +51,8 @@ func UserRoleToString(role UserRole) string {
 type User struct {
 	Id           uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	Username     string     `json:"username" gorm:"size:32;unique;not null"`
-	Email        string     `json:"email" gorm:"size:64;unique;not null"`
 	Password     string     `json:"password" gorm:"size:32"`
+	InvitationId uuid.UUID  `json:"invitation_id" gorm:"type:uuid"`
 	Credit       int32      `json:"credit" gorm:"type:numeric"`
 	Usage        int32      `json:"usage" gorm:"type:numeric"`
 	Role         UserRole   `json:"role" gorm:"type:numeric"`
@@ -64,7 +64,6 @@ type User struct {
 type PublicUser struct {
 	Id           string    `json:"id"`
 	Username     string    `json:"username"`
-	Email        string    `json:"email"`
 	Credit       int32     `json:"credit"`
 	Usage        int32     `json:"usage"`
 	Role         string    `json:"role"`

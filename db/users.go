@@ -10,7 +10,6 @@ func GetUserPublicObject(user *types.User) types.PublicUser {
 	return types.PublicUser{
 		Id:           user.Id.String(),
 		Username:     user.Username,
-		Email:        user.Email,
 		Credit:       user.Credit,
 		Usage:        user.Usage,
 		Role:         types.UserRoleToString(user.Role),

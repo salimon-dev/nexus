@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"salimon/nexus/db"
-	"salimon/nexus/mail"
+	"salimon/nexus/helpers"
 	"salimon/nexus/middlewares"
 	"salimon/nexus/types"
 
@@ -17,9 +17,9 @@ import (
 )
 
 type registerPayloadSchema struct {
-	Username string `json:"username" validate:"required"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,gte=5"`
+	InvitationToken string `json:"invitation_token" validate:"required"`
+	Username        string `json:"username" validate:"required"`
+	Password        string `json:"password" validate:"required,gte=5"`
 }
 
 func RegisterHandler(ctx echo.Context) error {
@@ -37,54 +37,62 @@ func RegisterHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
+	invitation, err := db.FindInvitation("token = ? AND usage_remaining > 1", payload.InvitationToken)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return ctx.String(http.StatusInternalServerError, "internal error")
+	}
+
+	if invitation == nil {
+		return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("invitation_token", "invitation token is invalid"))
+	}
+
 	passwordHash := md5.Sum([]byte(payload.Password))
 	password := hex.EncodeToString(passwordHash[:])
 
-	user, err := db.FindUser("username = ? AND email = ?", payload.Username, payload.Email)
+	user, err := db.FindUser("username = ?", payload.Username)
 	if err != nil {
 		fmt.Println(err)
 		return ctx.String(http.StatusInternalServerError, "internal error")
 	}
 
 	if user != nil {
-		// user is registered and in active/inactive status
-		switch user.Status {
-		case types.UserStatusActive:
-		case types.UserStatusInActive:
-			return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("action", "a user with same username or email already exists"))
-		default:
-			break
-		}
-		// user is pending status. so re-register
-		user.Password = password
-		user.RegisteredAt = time.Now()
-		err := db.UpdateUser(user)
-		if err != nil {
-			fmt.Println(err)
-			return ctx.String(http.StatusInternalServerError, "internal error")
-		}
-		mail.SendRegisterVerificationEmail(user)
-	} else {
-		user = &types.User{
-			Id:           uuid.New(),
-			Username:     payload.Username,
-			Email:        payload.Email,
-			Password:     payload.Password,
-			Credit:       15000,
-			Usage:        0,
-			Role:         types.UserRoleMember,
-			Status:       types.UserStatusPending,
-			RegisteredAt: time.Now(),
-			UpdatedAt:    time.Now(),
-		}
-		fmt.Println(user)
-		err := db.InsertUser(user)
-		if err != nil {
-			fmt.Println(err)
-			return ctx.String(http.StatusInternalServerError, "internal error")
-		}
-		mail.SendRegisterVerificationEmail(user)
+		// user is registered already
+		return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("action", "a user with same username already exists"))
 	}
-	return ctx.String(http.StatusOK, "registered")
+	user = &types.User{
+		Id:           uuid.New(),
+		Username:     payload.Username,
+		Password:     password,
+		InvitationId: invitation.Id,
+		Credit:       15000,
+		Usage:        0,
+		Role:         types.UserRoleMember,
+		Status:       types.UserStatusActive,
+		RegisteredAt: time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+	fmt.Println(user)
+	err = db.InsertUser(user)
+	if err != nil {
+		fmt.Println(err)
+		return ctx.String(http.StatusInternalServerError, "internal error")
+	}
+
+	accessToken, refreshToken, err := helpers.GenerateJWT(user)
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	publicUser := db.GetUserPublicObject(user)
+
+	response := types.AuthResponse{
+		AccessToken:  *accessToken,
+		RefreshToken: *refreshToken,
+		Data:         publicUser,
+	}
+
+	return ctx.JSON(http.StatusOK, response)
 
 }

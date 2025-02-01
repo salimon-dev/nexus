@@ -1,6 +1,8 @@
 package db
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -22,6 +24,7 @@ func SetupDatabase() {
 	DB.AutoMigrate(types.User{})
 	DB.AutoMigrate(types.Verification{})
 	DB.AutoMigrate(types.Entity{})
+	insertKeymaker()
 	insertE2EEntity()
 }
 
@@ -56,5 +59,30 @@ func insertE2EEntity() {
 	err := InsertEntity(&entity)
 	if err != nil {
 		fmt.Println(err.Error())
+	}
+}
+
+func insertKeymaker() {
+	username := os.Getenv("KEYMAKER_USERNAME")
+	passwordPlain := os.Getenv("KEYMAKER_PASSWORD")
+
+	passwordHash := md5.Sum([]byte(passwordPlain))
+	password := hex.EncodeToString(passwordHash[:])
+
+	keymaker := types.User{
+		Id:           uuid.New(),
+		Username:     username,
+		Password:     password,
+		Credit:       90000,
+		Usage:        0,
+		Role:         types.UserRoleKeyMaker,
+		Status:       types.UserStatusActive,
+		RegisteredAt: time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	err := InsertUser(&keymaker)
+	if err != nil {
+		fmt.Println(err)
 	}
 }

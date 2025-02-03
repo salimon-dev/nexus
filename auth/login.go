@@ -39,7 +39,7 @@ func LoginHandler(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, "internall error")
 	}
 	if user == nil {
-		return ctx.String(http.StatusUnauthorized, "unauthorized")
+		return helpers.UnauthorizedError(ctx)
 	}
 
 	accessToken, refreshToken, err := helpers.GenerateJWT(user)

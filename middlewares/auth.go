@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"fmt"
-	"net/http"
 	"salimon/nexus/db"
 	"salimon/nexus/helpers"
 	"strings"
@@ -16,7 +15,7 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		// Check if the header is empty or doesn't start with "Bearer "
 		if authorization == "" || !strings.HasPrefix(authorization, "Bearer ") {
-			return ctx.String(http.StatusUnauthorized, "unauthorized")
+			return helpers.UnauthorizedError(ctx)
 		}
 
 		// Extract the token part from the header
@@ -25,20 +24,20 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		claims, err := helpers.VerifyJWT(token)
 
 		if err != nil || claims == nil {
-			return ctx.String(http.StatusUnauthorized, "unauthorized")
+			return helpers.UnauthorizedError(ctx)
 		}
 
 		if claims.Type != "access" {
-			return ctx.String(http.StatusUnauthorized, "unauthorized")
+			return helpers.UnauthorizedError(ctx)
 		}
 
 		user, err := db.FindUser("id = ?", claims.UserID)
 		if err != nil {
 			fmt.Println(err)
-			return ctx.String(http.StatusInternalServerError, "internal error")
+			return helpers.InternalError(ctx)
 		}
 		if user == nil {
-			return ctx.String(http.StatusUnauthorized, "unauthorized")
+			return helpers.UnauthorizedError(ctx)
 		}
 
 		ctx.Set("user", user)

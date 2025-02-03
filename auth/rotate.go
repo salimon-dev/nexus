@@ -34,23 +34,23 @@ func RotateHandler(ctx echo.Context) error {
 	claims, err := helpers.VerifyJWT(payload.Token)
 	if err != nil {
 		fmt.Println(err)
-		return ctx.String(http.StatusUnauthorized, "unauthorized")
+		return helpers.UnauthorizedError(ctx)
 	}
 	if claims == nil {
-		return ctx.String(http.StatusUnauthorized, "unauthorized")
+		return helpers.UnauthorizedError(ctx)
 	}
 
 	if claims.Type != "refresh" {
-		return ctx.String(http.StatusUnauthorized, "unauthorized")
+		return helpers.UnauthorizedError(ctx)
 	}
 
 	user, err := db.FindUser("id = ?", claims.UserID)
 	if err != nil {
 		fmt.Println(err)
-		return ctx.String(http.StatusInternalServerError, "internal error")
+		return helpers.InternalError(ctx)
 	}
 	if user == nil {
-		return ctx.String(http.StatusUnauthorized, "unauthorized")
+		return helpers.UnauthorizedError(ctx)
 	}
 
 	accessToken, refreshToken, err := helpers.GenerateJWT(user)

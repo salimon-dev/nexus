@@ -30,9 +30,10 @@ func UserStatusToString(status UserStatus) string {
 type UserRole int8
 
 const (
-	UserRoleKeyMaker UserRole = 1
-	UserRoleAdmin    UserRole = 2
-	UserRoleMember   UserRole = 3
+	UserRoleKeyMaker  UserRole = 1
+	UserRoleAdmin     UserRole = 2
+	UserRoleDeveloper UserRole = 3
+	UserRoleMember    UserRole = 4
 )
 
 func UserRoleToString(role UserRole) string {

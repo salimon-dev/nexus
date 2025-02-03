@@ -4,7 +4,7 @@ import (
 	"salimon/nexus/auth"
 	"salimon/nexus/db"
 	"salimon/nexus/e2e"
-	"salimon/nexus/mail"
+	"salimon/nexus/invitations"
 	"salimon/nexus/middlewares"
 	"salimon/nexus/profile"
 	"salimon/nexus/rest"
@@ -15,7 +15,6 @@ import (
 )
 
 func main() {
-	mail.SetupEmailQueue()
 	db.SetupDatabase()
 	e := echo.New()
 	e.HideBanner = true
@@ -31,21 +30,22 @@ func main() {
 
 	// register
 	e.POST("/auth/register", auth.RegisterHandler)
-	e.POST("/auth/register/verify", auth.VerifyRegisterHandler)
 
 	// login
 	e.POST("/auth/login", auth.LoginHandler)
 	e.POST("/auth/rotate", auth.RotateHandler)
-
-	// password reset
-	e.POST("/auth/password-reset", auth.PasswordResetHandler)
-	e.POST("/auth/password-reset/verify", auth.VerifyPasswordResetHandler)
 
 	e.GET("/profile", profile.GetHandler, middlewares.AuthMiddleware)
 
 	// WebSocket route
 	e.GET("/sck", websocket.WsHandler)
 
+	// -- -- Admin APIs -- --
+	// invitations
+	e.POST("/invitations/create", invitations.CreateHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+	e.POST("/invitations/delete/:id", invitations.DeleteHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+
+	// -- -- External APIs -- --
 	// E2E control Endpoints
 	e.GET("/e2e/info", e2e.E2EInfoHandler)
 	e.POST("/e2e/reset", e2e.E2EResetHandler)

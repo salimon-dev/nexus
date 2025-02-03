@@ -3,17 +3,20 @@ package invitations
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"salimon/nexus/db"
 	"salimon/nexus/helpers"
 	"salimon/nexus/middlewares"
 	"salimon/nexus/types"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
 type createSchema struct {
-	UsageRemaining string `json:"password" validate:"required,gte=5"`
+	UsageRemaining int16     `json:"password" validate:"required"`
+	ExpiresAt      time.Time `json:"expires_at" validate:"required"`
 }
 
 func CreateHandler(ctx echo.Context) error {
@@ -31,28 +34,22 @@ func CreateHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
-	// fetch user based on email of verfication
-	user, err := db.FindUser("email = ? AND password = ?", payload.Email, payload.Password)
-	if err != nil {
-		fmt.Println(err.Error())
-		return ctx.String(http.StatusInternalServerError, "internall error")
-	}
-	if user == nil {
-		return ctx.String(http.StatusUnauthorized, "unauthorized")
-	}
+	user := ctx.Get("user").(types.User)
 
-	accessToken, refreshToken, err := helpers.GenerateJWT(user)
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+	record := types.Invitation{
+		Id:             uuid.New(),
+		Code:           helpers.GenerateRandomString(16),
+		CreatedBy:      user.Id,
+		UsageRemaining: payload.UsageRemaining,
+		ExpiresAt:      payload.ExpiresAt,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
-	publicUser := db.GetUserPublicObject(user)
-
-	response := types.AuthResponse{
-		AccessToken:  *accessToken,
-		RefreshToken: *refreshToken,
-		Data:         publicUser,
+	result := db.InvitationsModel().Save(record)
+	if result.Error != nil {
+		fmt.Println(result.Error)
+		return helpers.InternalError(ctx)
 	}
-
-	return ctx.JSON(http.StatusOK, response)
+	return ctx.JSON(http.StatusOK, record)
 }

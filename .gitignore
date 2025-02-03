@@ -1,4 +1,5 @@
 .env
 bootstrap
+/data
 *-cover.out
 *-cover.html

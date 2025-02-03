@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"salimon/nexus/db"
+	"salimon/nexus/helpers"
 	"salimon/nexus/types"
 
 	"github.com/labstack/echo/v4"
@@ -20,7 +21,7 @@ func E2EInfoHandler(ctx echo.Context) error {
 	result := db.UsersModel().Select("*").Where("email ILIKE ?", "%e2e-test%").Limit(32).Find(&users)
 	if result.Error != nil {
 		fmt.Println(result)
-		return ctx.String(http.StatusInternalServerError, "internal error")
+		return helpers.InternalError(ctx)
 	}
 	response.Users = users
 

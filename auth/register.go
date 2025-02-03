@@ -41,7 +41,7 @@ func RegisterHandler(ctx echo.Context) error {
 
 	if err != nil {
 		fmt.Println(err.Error())
-		return ctx.String(http.StatusInternalServerError, "internal error")
+		return helpers.InternalError(ctx)
 	}
 
 	if invitation == nil {
@@ -54,7 +54,7 @@ func RegisterHandler(ctx echo.Context) error {
 	user, err := db.FindUser("username = ?", payload.Username)
 	if err != nil {
 		fmt.Println(err)
-		return ctx.String(http.StatusInternalServerError, "internal error")
+		return helpers.InternalError(ctx)
 	}
 
 	if user != nil {
@@ -77,7 +77,15 @@ func RegisterHandler(ctx echo.Context) error {
 	err = db.InsertUser(user)
 	if err != nil {
 		fmt.Println(err)
-		return ctx.String(http.StatusInternalServerError, "internal error")
+		return helpers.InternalError(ctx)
+	}
+
+	invitation.UsageRemaining -= 1
+	result := db.InvitationsModel().Where("id = ?", invitation.Id).Updates(invitation)
+
+	if result.Error != nil {
+		fmt.Println(result.Error)
+		return helpers.InternalError(ctx)
 	}
 
 	accessToken, refreshToken, err := helpers.GenerateJWT(user)

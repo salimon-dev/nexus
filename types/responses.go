@@ -5,3 +5,10 @@ type AuthResponse struct {
 	RefreshToken string     `json:"refresh_token"`
 	Data         PublicUser `json:"data"`
 }
+
+type CollectionResponse[T interface{}] struct {
+	Data     []T   `json:"data"`
+	PageSize int   `json:"page_size"`
+	Page     int   `json:"page"`
+	Total    int64 `json:"total"`
+}

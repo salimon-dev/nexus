@@ -15,7 +15,8 @@ import (
 )
 
 type createSchema struct {
-	UsageRemaining int16     `json:"password" validate:"required"`
+	Code           string    `json:"code" validate:"lte=12"`
+	UsageRemaining int16     `json:"usage_remaining" validate:"required,gte=1"`
 	ExpiresAt      time.Time `json:"expires_at" validate:"required"`
 }
 
@@ -34,11 +35,16 @@ func CreateHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
-	user := ctx.Get("user").(types.User)
+	user := ctx.Get("user").(*types.User)
+
+	code := payload.Code
+	if code == "" {
+		code = helpers.GenerateRandomString(12)
+	}
 
 	record := types.Invitation{
 		Id:             uuid.New(),
-		Code:           helpers.GenerateRandomString(16),
+		Code:           code,
 		CreatedBy:      user.Id,
 		UsageRemaining: payload.UsageRemaining,
 		ExpiresAt:      payload.ExpiresAt,
@@ -46,7 +52,7 @@ func CreateHandler(ctx echo.Context) error {
 		UpdatedAt:      time.Now(),
 	}
 
-	result := db.InvitationsModel().Save(record)
+	result := db.InvitationsModel().Create(record)
 	if result.Error != nil {
 		fmt.Println(result.Error)
 		return helpers.InternalError(ctx)

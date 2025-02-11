@@ -1,40 +1,59 @@
 package invitations
 
 import (
+	"fmt"
 	"net/http"
-
-	"salimon/nexus/middlewares"
+	"salimon/nexus/db"
+	"salimon/nexus/helpers"
+	"salimon/nexus/types"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
 
-type searchSchema struct {
-	IsDepleted int `json:"is_depleted" validate:"optional,boolean"`
-	PageSize   int `json:"page_size" validate:"optional,gte:6,number"`
-	Page       int `json:"page" validate:"optional,number"`
-}
-
 func SearchHandler(ctx echo.Context) error {
-	payload := new(searchSchema)
-	if err := ctx.Bind(payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
+	pageStr := ctx.QueryParam("page")
+	pageSizeStr := ctx.QueryParam("page_size")
+
+	page := 1
+	pageSize := 10
+
+	if pageStr != "" {
+		if v, err := strconv.Atoi(pageStr); err == nil {
+			page = v
+		}
+	}
+	if pageSizeStr != "" {
+		if v, err := strconv.Atoi(pageSizeStr); err == nil {
+			pageSize = v
+		}
 	}
 
-	// validation errors
-	vError, err := middlewares.ValidatePayload(*payload)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
-	}
-	if vError != nil {
-		return ctx.JSON(http.StatusBadRequest, vError)
+	offset := (page - 1) * pageSize
+	limit := pageSize
+
+	var records []types.Invitation
+	results := db.InvitationsModel().Select("*").Offset(offset).Limit(limit).Find(&records)
+
+	if results.Error != nil {
+		fmt.Println(results.Error)
+		return helpers.InternalError(ctx)
 	}
 
-	if payload.Page == 0 {
-		payload.Page = 1
-	}
-	if payload.PageSize == 0 {
-		payload.PageSize = 10
+	var count int64
+	results = db.InvitationsModel().Select("*").Count(&count)
+
+	if results.Error != nil {
+		fmt.Println(results.Error)
+		return helpers.InternalError(ctx)
 	}
 
-	return ctx.JSON(http.StatusOK, "ok")
+	data := types.CollectionResponse[types.Invitation]{
+		Data:     records,
+		Total:    count,
+		PageSize: pageSize,
+		Page:     page,
+	}
+
+	return ctx.JSON(http.StatusOK, data)
 }

@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 
@@ -13,7 +15,7 @@ import (
 )
 
 type loginSchema struct {
-	Email    string `json:"email" validate:"required,email"`
+	Username string `json:"username" validate:"required"`
 	Password string `json:"password" validate:"required,gte=5"`
 }
 
@@ -32,11 +34,14 @@ func LoginHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
+	passwordHash := md5.Sum([]byte(payload.Password))
+	password := hex.EncodeToString(passwordHash[:])
+
 	// fetch user based on email of verfication
-	user, err := db.FindUser("email = ? AND password = ?", payload.Email, payload.Password)
+	user, err := db.FindUser("username = ? AND password = ?", payload.Username, password)
 	if err != nil {
 		fmt.Println(err.Error())
-		return ctx.String(http.StatusInternalServerError, "internall error")
+		return helpers.InternalError(ctx)
 	}
 	if user == nil {
 		return helpers.UnauthorizedError(ctx)

@@ -24,6 +24,7 @@ func SetupDatabase() {
 	DB.AutoMigrate(types.User{})
 	DB.AutoMigrate(types.Verification{})
 	DB.AutoMigrate(types.Entity{})
+	DB.AutoMigrate(types.Invitation{})
 	insertKeymaker()
 	insertE2EEntity()
 }
@@ -49,14 +50,24 @@ func initGormConnection() *gorm.DB {
 }
 
 func insertE2EEntity() {
-	entity := types.Entity{
+
+	entity, err := FindEntity("name = 'e2e'")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if entity != nil {
+		fmt.Println("e2e entity exists")
+		return
+	}
+	e2eEntity := types.Entity{
 		Id:          uuid.New(),
 		Name:        "e2e",
 		Description: "e2e testing entity for nexus operations",
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-	err := InsertEntity(&entity)
+	err = InsertEntity(&e2eEntity)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -65,6 +76,16 @@ func insertE2EEntity() {
 func insertKeymaker() {
 	username := os.Getenv("KEYMAKER_USERNAME")
 	passwordPlain := os.Getenv("KEYMAKER_PASSWORD")
+
+	user, err := FindUser("username = ? AND role = ?", username, types.UserRoleKeyMaker)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if user != nil {
+		fmt.Println("keymaker user exists")
+		return
+	}
 
 	passwordHash := md5.Sum([]byte(passwordPlain))
 	password := hex.EncodeToString(passwordHash[:])
@@ -75,13 +96,14 @@ func insertKeymaker() {
 		Password:     password,
 		Credit:       90000,
 		Usage:        0,
+		InvitationId: uuid.Nil,
 		Role:         types.UserRoleKeyMaker,
 		Status:       types.UserStatusActive,
 		RegisteredAt: time.Now(),
 		UpdatedAt:    time.Now(),
 	}
 
-	err := InsertUser(&keymaker)
+	err = InsertUser(&keymaker)
 	if err != nil {
 		fmt.Println(err)
 	}

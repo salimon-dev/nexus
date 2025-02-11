@@ -42,6 +42,7 @@ func main() {
 
 	// -- -- Admin APIs -- --
 	// invitations
+	e.GET("/invitations/search", invitations.SearchHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
 	e.POST("/invitations/create", invitations.CreateHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
 	e.POST("/invitations/delete/:id", invitations.DeleteHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
 

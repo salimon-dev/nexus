@@ -37,7 +37,7 @@ func RegisterHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
-	invitation, err := db.FindInvitation("token = ? AND usage_remaining > 1", payload.InvitationToken)
+	invitation, err := db.FindInvitation("code = ? AND usage_remaining > 1", payload.InvitationToken)
 
 	if err != nil {
 		fmt.Println(err.Error())

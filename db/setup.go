@@ -42,11 +42,16 @@ func generateConnectionString() string {
 
 func initGormConnection() *gorm.DB {
 	connectionString := generateConnectionString()
-	db, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
-	if err != nil {
-		log.Fatal(err.Error())
+	for {
+		log.Println("connecting to database")
+		db, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
+		if err != nil {
+			log.Println(err)
+			time.Sleep(time.Second * 3)
+			continue
+		}
+		return db
 	}
-	return db
 }
 
 func insertE2EEntity() {
@@ -64,6 +69,10 @@ func insertE2EEntity() {
 		Id:          uuid.New(),
 		Name:        "e2e",
 		Description: "e2e testing entity for nexus operations",
+		Status:      types.EntityStatusActive,
+		Permission:  types.EntityPermissionInternal,
+		Credit:      0,
+		BaseUrl:     "/e2e/entity/interact",
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
@@ -94,7 +103,8 @@ func insertKeymaker() {
 		Id:           uuid.New(),
 		Username:     username,
 		Password:     password,
-		Credit:       90000,
+		Credit:       0,
+		Balance:      90000,
 		Usage:        0,
 		InvitationId: uuid.Nil,
 		Role:         types.UserRoleKeyMaker,

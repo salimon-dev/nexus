@@ -14,15 +14,21 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type createSchema struct {
+type updateSchema struct {
 	Status         types.InvitationStatus `json:"status" validate:"required"`
-	Code           string                 `json:"code" validate:"lte=16"`
 	UsageRemaining int16                  `json:"usage_remaining" validate:"required,gte=1"`
 	ExpiresAt      time.Time              `json:"expires_at" validate:"required"`
 }
 
-func CreateHandler(ctx echo.Context) error {
-	payload := new(createSchema)
+func UpdateHandler(ctx echo.Context) error {
+	idString := ctx.Param("id")
+
+	id, err := uuid.Parse(idString)
+	if err != nil {
+		fmt.Println(err)
+		return ctx.String(http.StatusNotFound, "not found")
+	}
+	payload := new(updateSchema)
 	if err := ctx.Bind(payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadGateway, err.Error())
 	}
@@ -36,35 +42,23 @@ func CreateHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
-	user := ctx.Get("user").(*types.User)
+	record, err := db.FindInvitation("id = ?", id)
 
-	code := payload.Code
-	if code == "" {
-		code = helpers.GenerateRandomString(16)
-	}
-
-	existingInvitation, err := db.FindInvitation("code = ?", code)
 	if err != nil {
 		fmt.Println(err)
 		return helpers.InternalError(ctx)
 	}
 
-	if existingInvitation != nil {
-		return ctx.JSON(http.StatusBadRequest, helpers.MakeSingleValidationError("code", "an invitation with the same code already exists"))
+	if record == nil {
+		return ctx.String(http.StatusNotFound, "not found")
 	}
 
-	record := types.Invitation{
-		Id:             uuid.New(),
-		Code:           code,
-		CreatedBy:      user.Id,
-		Status:         payload.Status,
-		UsageRemaining: payload.UsageRemaining,
-		ExpiresAt:      payload.ExpiresAt,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-	}
+	record.Status = payload.Status
+	record.ExpiresAt = payload.ExpiresAt
+	record.UsageRemaining = payload.UsageRemaining
+	record.UpdatedAt = time.Now()
 
-	result := db.InvitationsModel().Create(record)
+	result := db.InvitationsModel().Where("id = ?", id).Save(record)
 	if result.Error != nil {
 		fmt.Println(result.Error)
 		return helpers.InternalError(ctx)

@@ -23,6 +23,6 @@ func handleMessage(body string, ctx *types.WsContext) {
 			Token:  tokens[i],
 		}
 		sendPayload(payload, ctx.Conn)
-		time.Sleep(2 * time.Second)
+		time.Sleep(200 * time.Millisecond)
 	}
 }

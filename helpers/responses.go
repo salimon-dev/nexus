@@ -13,3 +13,9 @@ func InternalError(ctx echo.Context) error {
 func UnauthorizedError(ctx echo.Context) error {
 	return ctx.String(http.StatusUnauthorized, "unauthorized")
 }
+
+func MakeSingleValidationError(field string, message string) map[string]string {
+	result := map[string]string{}
+	result[field] = message
+	return result
+}

@@ -5,7 +5,7 @@ import (
 )
 
 func GenerateRandomString(n int) string {
-	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
 	result := make([]byte, n)
 	for i := range result {
 		letter := letters[rand.Int()%len(letters)]

@@ -4,10 +4,12 @@ import (
 	"salimon/nexus/auth"
 	"salimon/nexus/db"
 	"salimon/nexus/e2e"
+	"salimon/nexus/entities"
 	"salimon/nexus/invitations"
 	"salimon/nexus/middlewares"
 	"salimon/nexus/profile"
 	"salimon/nexus/rest"
+	"salimon/nexus/users"
 	"salimon/nexus/websocket"
 
 	"github.com/labstack/echo/v4"
@@ -45,6 +47,17 @@ func main() {
 	e.GET("/invitations/search", invitations.SearchHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
 	e.POST("/invitations/create", invitations.CreateHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
 	e.POST("/invitations/delete/:id", invitations.DeleteHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+	e.POST("/invitations/update/:id", invitations.UpdateHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+	// users
+	e.GET("/users/search", users.SearchHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+	e.POST("/users/create", users.CreateHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+	e.POST("/users/delete/:id", users.DeleteHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+	e.POST("/users/update/:id", users.UpdateHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+	// entities
+	e.GET("/entities/search", entities.SearchHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+	e.POST("/entities/create", entities.CreateHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+	e.POST("/entities/delete/:id", entities.DeleteHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
+	e.POST("/entities/update/:id", entities.UpdateHandler, middlewares.AuthMiddleware, middlewares.AdminMiddleware)
 
 	// -- -- External APIs -- --
 	// E2E control Endpoints

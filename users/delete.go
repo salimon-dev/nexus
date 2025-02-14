@@ -1,4 +1,4 @@
-package invitations
+package users
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ func DeleteHandler(ctx echo.Context) error {
 		return ctx.String(http.StatusNotFound, "not found")
 	}
 
-	record, err := db.FindInvitation("id = ?", id)
+	record, err := db.FindUser("id = ?", id)
 
 	if err != nil {
 		fmt.Println(err)
@@ -32,6 +32,6 @@ func DeleteHandler(ctx echo.Context) error {
 		return ctx.String(http.StatusNotFound, "not found")
 	}
 
-	db.InvitationsModel().Where("id = ?", id).Delete(&types.Invitation{})
+	db.UsersModel().Where("id = ?", id).Delete(&types.User{})
 	return ctx.JSON(http.StatusOK, "record deleted")
 }

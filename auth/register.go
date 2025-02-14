@@ -17,9 +17,9 @@ import (
 )
 
 type registerPayloadSchema struct {
-	InvitationToken string `json:"invitation_token" validate:"required"`
-	Username        string `json:"username" validate:"required"`
-	Password        string `json:"password" validate:"required,gte=5"`
+	InvitationCode string `json:"invitation_code" validate:"required,lte=16"`
+	Username       string `json:"username" validate:"required"`
+	Password       string `json:"password" validate:"required,gte=5"`
 }
 
 func RegisterHandler(ctx echo.Context) error {
@@ -37,7 +37,7 @@ func RegisterHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
-	invitation, err := db.FindInvitation("code = ? AND usage_remaining > 1", payload.InvitationToken)
+	invitation, err := db.FindInvitation("code = ? AND usage_remaining > 0 AND expires_at > ? AND status = ?", payload.InvitationCode, time.Now(), types.InvitationStatusActive)
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -45,7 +45,7 @@ func RegisterHandler(ctx echo.Context) error {
 	}
 
 	if invitation == nil {
-		return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("invitation_token", "invitation token is invalid"))
+		return ctx.JSON(http.StatusBadRequest, helpers.MakeSingleValidationError("invitation_code", "invitation_code is invalid"))
 	}
 
 	passwordHash := md5.Sum([]byte(payload.Password))
@@ -59,14 +59,15 @@ func RegisterHandler(ctx echo.Context) error {
 
 	if user != nil {
 		// user is registered already
-		return ctx.JSON(http.StatusBadRequest, middlewares.MakeSingleValidationError("action", "a user with same username already exists"))
+		return ctx.JSON(http.StatusBadRequest, helpers.MakeSingleValidationError("action", "a user with same username already exists"))
 	}
 	user = &types.User{
 		Id:           uuid.New(),
 		Username:     payload.Username,
 		Password:     password,
 		InvitationId: invitation.Id,
-		Credit:       15000,
+		Credit:       0,
+		Balance:      0,
 		Usage:        0,
 		Role:         types.UserRoleMember,
 		Status:       types.UserStatusActive,

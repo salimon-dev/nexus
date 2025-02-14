@@ -19,12 +19,18 @@ func translateValidationError(err *ValidationError) string {
 		return fmt.Sprintf("%s is required", err.Field)
 	case "email":
 		return fmt.Sprintf("%s must be a valid email", err.Field)
+	case "uuid":
+		return fmt.Sprintf("%s must be in uuid-v4 format", err.Field)
 	case "unique":
 		return fmt.Sprintf("%s must be unique", err.Field)
 	case "gte":
 		return fmt.Sprintf("%s must be more or equal than %s charachters", err.Field, err.Param)
 	case "gt":
 		return fmt.Sprintf("%s must be more than %s charachters", err.Field, err.Param)
+	case "lte":
+		return fmt.Sprintf("%s must be less or equal than %s charachters", err.Field, err.Param)
+	case "lt":
+		return fmt.Sprintf("%s must be less than %s charachters", err.Field, err.Param)
 	default:
 		return "undefined validation error"
 	}
@@ -77,10 +83,4 @@ func ValidatePayload(payload interface{}) (map[string]string, error) {
 	}
 	return nil, nil
 
-}
-
-func MakeSingleValidationError(field string, message string) map[string]string {
-	result := map[string]string{}
-	result[field] = message
-	return result
 }

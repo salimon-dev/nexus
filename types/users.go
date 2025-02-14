@@ -55,6 +55,7 @@ type User struct {
 	Password     string     `json:"password" gorm:"size:32"`
 	InvitationId uuid.UUID  `json:"invitation_id" gorm:"type:uuid"`
 	Credit       int32      `json:"credit" gorm:"type:numeric"`
+	Balance      int32      `json:"balance" gorm:"type:numeric"`
 	Usage        int32      `json:"usage" gorm:"type:numeric"`
 	Role         UserRole   `json:"role" gorm:"type:numeric"`
 	Status       UserStatus `json:"status" gorm:"type:numeric"`

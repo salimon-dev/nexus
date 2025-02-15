@@ -1,8 +1,12 @@
 package websocket
 
 import (
+	"bufio"
+	"fmt"
+	"io"
+	"net/http"
 	"salimon/nexus/types"
-	"time"
+	"strings"
 )
 
 func handleMessage(body string, ctx *types.WsContext) {
@@ -10,19 +14,48 @@ func handleMessage(body string, ctx *types.WsContext) {
 		sendInvalidPayload(ctx.Conn)
 		return
 	}
-	if ctx.Entity == "" {
+	if ctx.Entity == nil {
 		sendErrorPayload("no entity connected", ctx.Conn)
 		return
 	}
 
-	tokens := []string{"this", "is", "a", "new", "message"}
+	data := fmt.Sprintf(`{"data": "%s"}`, body)
+	resp, err := http.Post(ctx.Entity.BaseUrl+"/interact", "application/json", strings.NewReader(data))
 
-	for i := 0; i < len(tokens); i++ {
+	if err != nil {
+		fmt.Println(err)
+		sendErrorPayload("internal error", ctx.Conn)
+		return
+	}
+	defer resp.Body.Close()
+
+	reader := bufio.NewReader(resp.Body)
+
+	tokenStart := types.WsResponse{
+		Action: "TOKEN_START",
+	}
+	tokenEnd := types.WsResponse{
+		Action: "TOKEN_END",
+	}
+
+	sendPayload(tokenStart, ctx.Conn)
+	for {
+		line, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Println(err)
+			sendErrorPayload("internal error", ctx.Conn)
+			return
+		}
+		token := strings.TrimSpace(line)
 		payload := types.WsResponse{
 			Action: "TOKEN",
-			Token:  tokens[i],
+			Token:  token,
 		}
+		fmt.Println(token)
 		sendPayload(payload, ctx.Conn)
-		time.Sleep(200 * time.Millisecond)
 	}
+	sendPayload(tokenEnd, ctx.Conn)
 }

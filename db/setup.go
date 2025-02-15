@@ -26,7 +26,7 @@ func SetupDatabase() {
 	DB.AutoMigrate(types.Entity{})
 	DB.AutoMigrate(types.Invitation{})
 	insertKeymaker()
-	insertE2EEntity()
+	// insertE2EEntity()
 }
 
 // generate connection string from  environment variables
@@ -54,33 +54,33 @@ func initGormConnection() *gorm.DB {
 	}
 }
 
-func insertE2EEntity() {
-
-	entity, err := FindEntity("name = 'e2e'")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	if entity != nil {
-		fmt.Println("e2e entity exists")
-		return
-	}
-	e2eEntity := types.Entity{
-		Id:          uuid.New(),
-		Name:        "e2e",
-		Description: "e2e testing entity for nexus operations",
-		Status:      types.EntityStatusActive,
-		Permission:  types.EntityPermissionInternal,
-		Credit:      0,
-		BaseUrl:     "/e2e/entity/interact",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-	err = InsertEntity(&e2eEntity)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-}
+// TODO: make sure you don't need it anymore
+// func insertE2EEntity() {
+// 	entity, err := FindEntity("name = 'e2e'")
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	if entity != nil {
+// 		fmt.Println("e2e entity exists")
+// 		return
+// 	}
+// 	e2eEntity := types.Entity{
+// 		Id:          uuid.New(),
+// 		Name:        "e2e",
+// 		Description: "e2e testing entity for nexus operations",
+// 		Status:      types.EntityStatusActive,
+// 		Permission:  types.EntityPermissionInternal,
+// 		Credit:      0,
+// 		BaseUrl:     "/e2e",
+// 		CreatedAt:   time.Now(),
+// 		UpdatedAt:   time.Now(),
+// 	}
+// 	err = InsertEntity(&e2eEntity)
+// 	if err != nil {
+// 		fmt.Println(err.Error())
+// 	}
+// }
 
 func insertKeymaker() {
 	username := os.Getenv("KEYMAKER_USERNAME")

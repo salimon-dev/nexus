@@ -61,8 +61,7 @@ func main() {
 
 	// -- -- External APIs -- --
 	// E2E control Endpoints
-	e.GET("/e2e/info", e2e.E2EInfoHandler)
-	e.POST("/e2e/reset", e2e.E2EResetHandler)
+	e.POST("/e2e/interact", e2e.InteractHandler)
 
 	// Start the server
 	port := "80"

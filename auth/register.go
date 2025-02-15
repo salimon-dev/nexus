@@ -74,7 +74,6 @@ func RegisterHandler(ctx echo.Context) error {
 		RegisteredAt: time.Now(),
 		UpdatedAt:    time.Now(),
 	}
-	fmt.Println(user)
 	err = db.InsertUser(user)
 	if err != nil {
 		fmt.Println(err)

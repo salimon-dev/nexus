@@ -24,5 +24,5 @@ type WsResponse struct {
 type WsContext struct {
 	Conn   *websocket.Conn
 	User   *User
-	Entity string
+	Entity *Entity
 }

@@ -1,0 +1,41 @@
+name: Deploy to Cluster
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "latest"
+
+      - name: Authenticate with Kubernetes
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig
+          export KUBECONFIG=kubeconfig
+
+      - name: Determine Image Tag
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=dev" >> $GITHUB_ENV
+          fi
+
+      - name: Update deployment
+        run: |
+          kubectl set image deployment/my-deployment nexus=pitronumdev/nexus:${{ env.IMAGE_TAG }} --kubeconfig=kubeconfig
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/my-deployment --kubeconfig=kubeconfig

@@ -1,4 +1,4 @@
-FROM golang:alpine as Builder
+FROM golang:alpine as builder
 WORKDIR /app
 COPY . /app
 RUN go build -o bootstrap .

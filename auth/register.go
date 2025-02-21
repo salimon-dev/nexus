@@ -67,8 +67,7 @@ func RegisterHandler(ctx echo.Context) error {
 		Password:     password,
 		InvitationId: invitation.Id,
 		Credit:       0,
-		Balance:      0,
-		Usage:        0,
+		Balance:      15000,
 		Role:         types.UserRoleMember,
 		Status:       types.UserStatusActive,
 		RegisteredAt: time.Now(),
@@ -93,12 +92,10 @@ func RegisterHandler(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	publicUser := db.GetUserPublicObject(user)
-
 	response := types.AuthResponse{
 		AccessToken:  *accessToken,
 		RefreshToken: *refreshToken,
-		Data:         publicUser,
+		Data:         *user,
 	}
 
 	return ctx.JSON(http.StatusOK, response)

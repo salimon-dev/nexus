@@ -32,8 +32,8 @@ func SearchHandler(ctx echo.Context) error {
 	offset := (page - 1) * pageSize
 	limit := pageSize
 
-	var records []types.Invitation
-	results := db.InvitationsModel().Select("*").Offset(offset).Limit(limit).Find(&records)
+	var records []types.User
+	results := db.UsersModel().Select("*").Offset(offset).Limit(limit).Find(&records)
 
 	if results.Error != nil {
 		fmt.Println(results.Error)
@@ -41,14 +41,14 @@ func SearchHandler(ctx echo.Context) error {
 	}
 
 	var count int64
-	results = db.InvitationsModel().Select("*").Count(&count)
+	results = db.UsersModel().Select("*").Count(&count)
 
 	if results.Error != nil {
 		fmt.Println(results.Error)
 		return helpers.InternalError(ctx)
 	}
 
-	data := types.CollectionResponse[types.Invitation]{
+	data := types.CollectionResponse[types.User]{
 		Data:     records,
 		Total:    count,
 		PageSize: pageSize,

@@ -32,8 +32,13 @@ func SearchHandler(ctx echo.Context) error {
 	offset := (page - 1) * pageSize
 	limit := pageSize
 
-	var records []types.Invitation
-	results := db.InvitationsModel().Select("*").Offset(offset).Limit(limit).Find(&records)
+	type Record struct {
+		types.Invitation
+		Username string `json:"username"`
+	}
+
+	var records []Record
+	results := db.InvitationsModel().Select("invitations.*, users.username").Joins("JOIN users ON users.id = invitations.created_by").Offset(offset).Limit(limit).Find(&records)
 
 	if results.Error != nil {
 		fmt.Println(results.Error)
@@ -48,7 +53,7 @@ func SearchHandler(ctx echo.Context) error {
 		return helpers.InternalError(ctx)
 	}
 
-	data := types.CollectionResponse[types.Invitation]{
+	data := types.CollectionResponse[Record]{
 		Data:     records,
 		Total:    count,
 		PageSize: pageSize,

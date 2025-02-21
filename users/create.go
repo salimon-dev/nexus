@@ -17,14 +17,13 @@ import (
 )
 
 type createSchema struct {
-	InvitationId string           `json:"invitation_id" validate:"required,uuid"`
-	Username     string           `json:"username" validate:"required"`
-	Password     string           `json:"password" validate:"required,gte=5"`
-	Status       types.UserStatus `json:"status" validate:"required"`
-	Role         types.UserRole   `json:"role" validate:"required"`
-	Credit       *int32           `json:"credit" validate:"required"`
-	Balance      *int32           `json:"balance" validate:"required"`
-	Usage        *int32           `json:"usage" validate:"required"`
+	InvitationCode string           `json:"invitation_code" validate:"required,lte=16"`
+	Username       string           `json:"username" validate:"required"`
+	Password       string           `json:"password" validate:"required,gte=5"`
+	Status         types.UserStatus `json:"status" validate:"required"`
+	Role           types.UserRole   `json:"role" validate:"required"`
+	Credit         *int32           `json:"credit" validate:"required"`
+	Balance        *int32           `json:"balance" validate:"required"`
 }
 
 func CreateHandler(ctx echo.Context) error {
@@ -42,7 +41,7 @@ func CreateHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
-	invitation, err := db.FindInvitation("id = ?", payload.InvitationId)
+	invitation, err := db.FindInvitation("code = ? AND usage_remaining > 0 AND expires_at > ? AND status = ?", payload.InvitationCode, time.Now(), types.InvitationStatusActive)
 	if err != nil {
 		fmt.Println(err)
 		return helpers.InternalError(ctx)
@@ -60,9 +59,9 @@ func CreateHandler(ctx echo.Context) error {
 		Password:     password,
 		InvitationId: invitation.Id,
 		Role:         payload.Role,
+		Status:       payload.Status,
 		Balance:      *payload.Balance,
 		Credit:       *payload.Credit,
-		Usage:        *payload.Usage,
 		RegisteredAt: time.Now(),
 		UpdatedAt:    time.Now(),
 	}
@@ -72,5 +71,14 @@ func CreateHandler(ctx echo.Context) error {
 		fmt.Println(result.Error)
 		return helpers.InternalError(ctx)
 	}
+
+	invitation.UsageRemaining -= 1
+	result = db.InvitationsModel().Where("id = ?", invitation.Id).Updates(invitation)
+
+	if result.Error != nil {
+		fmt.Println(result.Error)
+		return helpers.InternalError(ctx)
+	}
+
 	return ctx.JSON(http.StatusOK, record)
 }

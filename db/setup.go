@@ -105,7 +105,6 @@ func insertKeymaker() {
 		Password:     password,
 		Credit:       0,
 		Balance:      90000,
-		Usage:        0,
 		InvitationId: uuid.Nil,
 		Role:         types.UserRoleKeyMaker,
 		Status:       types.UserStatusActive,

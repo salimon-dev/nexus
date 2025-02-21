@@ -17,14 +17,12 @@ import (
 )
 
 type updateSchema struct {
-	InvitationId string           `json:"invitation_id" validate:"required,uuid"`
-	Username     string           `json:"username" validate:"required"`
-	Password     string           `json:"password" validate:"required,gte=5"`
-	Status       types.UserStatus `json:"status" validate:"required"`
-	Role         types.UserRole   `json:"role" validate:"required"`
-	Credit       *int32           `json:"credit" validate:"required"`
-	Balance      *int32           `json:"balance" validate:"required"`
-	Usage        *int32           `json:"usage" validate:"required"`
+	Username string           `json:"username" validate:"required"`
+	Password *string          `json:"password,omitempty" validate:"omitempty,gte=5"`
+	Status   types.UserStatus `json:"status" validate:"required"`
+	Role     types.UserRole   `json:"role" validate:"required"`
+	Credit   *int32           `json:"credit" validate:"required"`
+	Balance  *int32           `json:"balance" validate:"required"`
 }
 
 func UpdateHandler(ctx echo.Context) error {
@@ -49,15 +47,6 @@ func UpdateHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, vError)
 	}
 
-	invitation, err := db.FindInvitation("id = ?", payload.InvitationId)
-	if err != nil {
-		fmt.Println(err)
-		return helpers.InternalError(ctx)
-	}
-	if invitation == nil {
-		return ctx.JSON(http.StatusBadRequest, helpers.MakeSingleValidationError("invitation_id", "invitation record not found"))
-	}
-
 	record, err := db.FindUser("id = ?", id)
 
 	if err != nil {
@@ -69,17 +58,16 @@ func UpdateHandler(ctx echo.Context) error {
 		return ctx.String(http.StatusNotFound, "not found")
 	}
 
-	passwordHash := md5.Sum([]byte(payload.Password))
-	password := hex.EncodeToString(passwordHash[:])
+	if payload.Password != nil {
+		passwordHash := md5.Sum([]byte(*payload.Password))
+		password := hex.EncodeToString(passwordHash[:])
+		record.Password = password
+	}
 
 	record.Status = payload.Status
 	record.Role = payload.Role
-	record.InvitationId = invitation.Id
-	record.Usage = *payload.Usage
 	record.Credit = *payload.Credit
 	record.Balance = *payload.Balance
-	record.InvitationId = invitation.Id
-	record.Password = password
 	record.UpdatedAt = time.Now()
 
 	result := db.UsersModel().Where("id = ?", id).Save(record)
@@ -87,5 +75,6 @@ func UpdateHandler(ctx echo.Context) error {
 		fmt.Println(result.Error)
 		return helpers.InternalError(ctx)
 	}
+
 	return ctx.JSON(http.StatusOK, record)
 }

@@ -6,19 +6,6 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetUserPublicObject(user *types.User) types.PublicUser {
-	return types.PublicUser{
-		Id:           user.Id.String(),
-		Username:     user.Username,
-		Credit:       user.Credit,
-		Usage:        user.Usage,
-		Role:         types.UserRoleToString(user.Role),
-		Status:       types.UserStatusToString(user.Status),
-		RegisteredAt: user.RegisteredAt,
-		UpdatedAt:    user.UpdatedAt,
-	}
-}
-
 func UsersModel() *gorm.DB {
 	return DB.Model(types.User{})
 }

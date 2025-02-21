@@ -18,7 +18,7 @@ type updateSchema struct {
 	Name        string                 `json:"name" validate:"required,lte=32"`
 	Description string                 `json:"description" validate:"required,lte=32"`
 	BaseUrl     string                 `json:"base_url" validate:"required,lte=256,url"`
-	Credit      int32                  `json:"credit" validate:"required"`
+	Credit      *int32                 `json:"credit" validate:"required"`
 	Status      types.EntityStatus     `json:"status" validate:"required"`
 	Permission  types.EntityPermission `json:"permission" validate:"required"`
 }
@@ -58,7 +58,7 @@ func UpdateHandler(ctx echo.Context) error {
 
 	record.Name = payload.Name
 	record.Description = payload.Description
-	record.Credit = payload.Credit
+	record.Credit = *payload.Credit
 	record.BaseUrl = payload.BaseUrl
 	record.Status = payload.Status
 	record.Permission = payload.Permission

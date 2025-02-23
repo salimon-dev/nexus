@@ -20,6 +20,14 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Create .env File
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "VITE_BASE_URL=https://dev.salimon.net/nexus" > .env
+          else
+            echo "VITE_BASE_URL=https://dev.salimon.net/nexus" > .env
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 

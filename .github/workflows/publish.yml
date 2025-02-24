@@ -20,14 +20,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Create .env File
-        run: |
-          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "VITE_BASE_URL=https://dev.salimon.net/nexus" > .env
-          else
-            echo "VITE_BASE_URL=https://dev.salimon.net/nexus" > .env
-          fi
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -39,3 +31,11 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             pitronumdev/nexus:${{ github.ref == 'refs/heads/main' && 'latest' || 'dev' }}
+      - name: Rollout
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.CLUSTER_HOST }}
+          username: ${{ secrets.CLUSTER_USERNAME }}
+          key: ${{ secrets.CLUSTER_SSH_KEY }}
+          port: 22
+          script: kubectl rollout restart deployment/${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}-nexus
